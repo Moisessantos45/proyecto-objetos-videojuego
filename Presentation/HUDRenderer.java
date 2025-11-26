@@ -143,7 +143,8 @@ public class HUDRenderer {
         String opcion1 = "[1] Iniciar Partida";
         String opcion2 = "[2] Crear Servidor";
         String opcion3 = "[3] Unirse a Servidor";
-        String opcion4 = "[4] Salir";
+        String opcion4 = "[4] Comandos del Juego";
+        String opcion5 = "[5] Salir";
 
         int y = pantallaAlto / 2 - 20;
         g2.drawString(opcion1, (pantallaAncho - g2.getFontMetrics().stringWidth(opcion1)) / 2, y);
@@ -153,6 +154,68 @@ public class HUDRenderer {
         g2.drawString(opcion3, (pantallaAncho - g2.getFontMetrics().stringWidth(opcion3)) / 2, y);
         y += 30;
         g2.drawString(opcion4, (pantallaAncho - g2.getFontMetrics().stringWidth(opcion4)) / 2, y);
+        y += 30;
+        g2.drawString(opcion5, (pantallaAncho - g2.getFontMetrics().stringWidth(opcion5)) / 2, y);
+    }
+
+    public void renderMenuComandos(Graphics2D g2, int pantallaAncho, int pantallaAlto) {
+        g2.setColor(new Color(0, 0, 0, 180));
+        g2.fillRect(0, 0, pantallaAncho, pantallaAlto);
+
+        g2.setFont(fuenteTitulo);
+        g2.setColor(new Color(255, 215, 0));
+        String titulo = "COMANDOS DEL JUEGO";
+        int anchoTitulo = g2.getFontMetrics().stringWidth(titulo);
+        g2.drawString(titulo, (pantallaAncho - anchoTitulo) / 2, 50);
+
+        g2.setFont(fuenteNormal);
+        g2.setColor(Color.WHITE);
+        
+        String[] comandos = {
+            "MOVIMIENTO:",
+            "  ↑↓←→ o WASD  =  Mover personaje",
+            "  Q  =  Tomar una posición",
+            "",
+            "COMBATE Y ACCIÓN:",
+            "  E  =  Interactuar con cofres",
+            "  A-D  =  Seleccionar respuesta",
+            "  ENTER  =  Confirmar respuesta",
+            "",
+            "POCIONES:",
+            "  R  =  Usar poción (cura 40 HP)",
+            "",
+            "CONTROL DE JUEGO:",
+            "  P  =  Pausar/Reanudar",
+            "  ESC  =  Menú de pausa",
+            "  ENTER  =  Confirmar acciones",
+            "",
+            "EN MULTIJUGADOR:",
+            "  Todos los cambios se sincronizan en tiempo real",
+            "  Ver HUD para estadísticas de otros jugadores"
+        };
+
+        int y = 120;
+        int lineHeight = 25;
+        
+        for (String comando : comandos) {
+            if (comando.isEmpty()) {
+                y += 10;
+            } else if (comando.endsWith(":")) {
+                g2.setColor(new Color(100, 200, 255));
+                g2.drawString(comando, 100, y);
+                g2.setColor(Color.WHITE);
+                y += lineHeight;
+            } else {
+                g2.drawString(comando, 100, y);
+                y += lineHeight;
+            }
+        }
+
+        g2.setFont(fuenteNormal);
+        g2.setColor(Color.YELLOW);
+        String regreso = "[ESC] Volver al Menú Principal";
+        int anchoRegreso = g2.getFontMetrics().stringWidth(regreso);
+        g2.drawString(regreso, (pantallaAncho - anchoRegreso) / 2, pantallaAlto - 40);
     }
 
     public void renderCofreModal(Graphics2D g2, int pantallaAncho, int pantallaAlto, Acertijo acertijo) {

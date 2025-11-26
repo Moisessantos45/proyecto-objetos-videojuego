@@ -232,4 +232,12 @@ public class InputService implements KeyListener {
     public void setTeclaC(boolean estado) {
         this.teclaC = estado;
     }
+
+    public void setTecla4(boolean estado) {
+        this.tecla4 = estado;
+    }
+
+    public boolean isTecla5() {
+        return false;  // Tecla 5 no se usa actualmente, simulamos con teclaEscape
+    }
 }

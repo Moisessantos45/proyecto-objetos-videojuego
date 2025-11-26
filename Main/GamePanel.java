@@ -18,6 +18,7 @@ public class GamePanel extends JPanel implements Runnable {
     public enum GameState {
         BIENVENIDA,
         MENU_PRINCIPAL,
+        MENU_COMANDOS,
         JUGANDO,
         PAUSA,
         MENU_PAUSA,
@@ -129,7 +130,16 @@ public class GamePanel extends JPanel implements Runnable {
                     resetearInputs();
                     inputService.setTecla3(false);
                 } else if (inputService.isTecla4()) {
+                    estadoJuego = GameState.MENU_COMANDOS;
+                    inputService.setTecla4(false);
+                } else if (inputService.isTecla5()) {
                     System.exit(0);
+                }
+                break;
+            case MENU_COMANDOS:
+                if (inputService.isTeclaEscape()) {
+                    estadoJuego = GameState.MENU_PRINCIPAL;
+                    inputService.setTeclaEscape(false);
                 }
                 break;
             case JUGANDO:
@@ -347,6 +357,9 @@ public class GamePanel extends JPanel implements Runnable {
                 break;
             case MENU_PRINCIPAL:
                 renderSystem.renderMenuPrincipal(g2, config.getAnchoPantalla(), config.getAltoPantalla());
+                break;
+            case MENU_COMANDOS:
+                renderSystem.renderMenuComandos(g2, config.getAnchoPantalla(), config.getAltoPantalla());
                 break;
             case CREAR_SERVIDOR:
                 renderSystem.renderCrearServidor(g2, config.getAnchoPantalla(), config.getAltoPantalla());

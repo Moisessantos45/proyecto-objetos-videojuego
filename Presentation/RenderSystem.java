@@ -154,4 +154,8 @@ public class RenderSystem {
                                      java.util.Map<String, domain.RemotePlayer> remotePlayers) {
         hudRenderer.renderJuegoTerminado(g2, pantallaAncho, pantallaAlto, jugadorSystem, statsLocal, remotePlayers);
     }
+    
+    public void renderMenuComandos(Graphics2D g2, int pantallaAncho, int pantallaAlto) {
+        hudRenderer.renderMenuComandos(g2, pantallaAncho, pantallaAlto);
+    }
 }
