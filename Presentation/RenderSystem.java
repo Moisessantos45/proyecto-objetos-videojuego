@@ -148,7 +148,10 @@ public class RenderSystem {
         }
     }
     
-    public void renderJuegoTerminado(Graphics2D g2, int pantallaAncho, int pantallaAlto, JugadorSystem jugadorSystem) {
-        hudRenderer.renderJuegoTerminado(g2, pantallaAncho, pantallaAlto, jugadorSystem);
+    public void renderJuegoTerminado(Graphics2D g2, int pantallaAncho, int pantallaAlto, 
+                                     JugadorSystem jugadorSystem,
+                                     PlayerStats statsLocal,
+                                     java.util.Map<String, domain.RemotePlayer> remotePlayers) {
+        hudRenderer.renderJuegoTerminado(g2, pantallaAncho, pantallaAlto, jugadorSystem, statsLocal, remotePlayers);
     }
 }

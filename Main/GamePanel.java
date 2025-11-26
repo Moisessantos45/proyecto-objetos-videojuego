@@ -363,7 +363,9 @@ public class GamePanel extends JPanel implements Runnable {
                 break;
             case JUEGO_TERMINADO:
                 renderSystem.renderJuegoTerminado(g2, config.getAnchoPantalla(), config.getAltoPantalla(), 
-                    gameEngine.getJugadorSystem());
+                    gameEngine.getJugadorSystem(),
+                    gameEngine.getStatsLocal(),
+                    gameEngine.getRemotePlayers());
                 break;
             case JUGANDO:
             case PAUSA:

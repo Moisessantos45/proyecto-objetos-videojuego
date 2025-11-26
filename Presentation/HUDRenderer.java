@@ -534,7 +534,10 @@ public class HUDRenderer {
         g2.drawString(botonCancelar, (pantallaAncho - anchoCancelar) / 2, y);
     }
     
-    public void renderJuegoTerminado(Graphics2D g2, int pantallaAncho, int pantallaAlto, JugadorSystem jugadorSystem) {
+    public void renderJuegoTerminado(Graphics2D g2, int pantallaAncho, int pantallaAlto, 
+                                     JugadorSystem jugadorSystem,
+                                     model.PlayerStats statsLocal,
+                                     java.util.Map<String, domain.RemotePlayer> remotePlayers) {
         g2.setColor(new Color(0, 0, 0, 200));
         g2.fillRect(0, 0, pantallaAncho, pantallaAlto);
 
@@ -542,31 +545,70 @@ public class HUDRenderer {
         g2.setColor(Color.RED);
         String titulo = "¡TIEMPO TERMINADO!";
         int anchoTitulo = g2.getFontMetrics().stringWidth(titulo);
-        g2.drawString(titulo, (pantallaAncho - anchoTitulo) / 2, pantallaAlto / 2 - 150);
+        g2.drawString(titulo, (pantallaAncho - anchoTitulo) / 2, pantallaAlto / 2 - 200);
 
-        g2.setFont(new Font("Arial", Font.BOLD, 24));
+        // Calcular ganador
+        String ganador = "GANADOR: ";
+        String tipoGanador = "";
+        
+        if (remotePlayers == null || remotePlayers.isEmpty()) {
+            // Solo hay un jugador (singleplayer)
+            ganador += statsLocal.getAlias();
+            tipoGanador = " (Fin de partida)";
+        } else {
+            // Hay múltiples jugadores
+            int acertijosLocal = statsLocal.getAcertijosResueltos();
+            int vidaLocal = statsLocal.getVida();
+            String ganadorId = statsLocal.getAlias();
+            
+            // Buscar máximo de acertijos
+            int maxAcertijos = acertijosLocal;
+            int maxVidaConAcertijos = vidaLocal;
+            
+            for (domain.RemotePlayer remotePlayer : remotePlayers.values()) {
+                int acertijosRemoto = remotePlayer.getStats().getAcertijosResueltos();
+                int vidaRemoto = remotePlayer.getStats().getVida();
+                
+                if (acertijosRemoto > maxAcertijos) {
+                    maxAcertijos = acertijosRemoto;
+                    ganadorId = remotePlayer.getStats().getAlias();
+                    maxVidaConAcertijos = vidaRemoto;
+                } else if (acertijosRemoto == maxAcertijos && acertijosRemoto == acertijosLocal) {
+                    // Empate en acertijos: gana por vida
+                    if (vidaRemoto > maxVidaConAcertijos) {
+                        ganadorId = remotePlayer.getStats().getAlias();
+                        maxVidaConAcertijos = vidaRemoto;
+                    }
+                }
+            }
+            
+            ganador += ganadorId;
+            tipoGanador = " (" + maxAcertijos + " acertijos)";
+        }
+        
+        g2.setFont(new Font("Arial", Font.BOLD, 32));
         g2.setColor(Color.YELLOW);
-        String subtitulo = "Estadísticas Finales";
+        String textoGanador = ganador + tipoGanador;
+        int anchoGanador = g2.getFontMetrics().stringWidth(textoGanador);
+        g2.drawString(textoGanador, (pantallaAncho - anchoGanador) / 2, pantallaAlto / 2 - 100);
+
+        // Mostrar estadísticas del jugador local
+        g2.setFont(new Font("Arial", Font.BOLD, 24));
+        g2.setColor(Color.CYAN);
+        String subtitulo = "Tus Estadísticas:";
         int anchoSubtitulo = g2.getFontMetrics().stringWidth(subtitulo);
-        g2.drawString(subtitulo, (pantallaAncho - anchoSubtitulo) / 2, pantallaAlto / 2 - 80);
+        g2.drawString(subtitulo, (pantallaAncho - anchoSubtitulo) / 2, pantallaAlto / 2 - 30);
 
         g2.setFont(fuenteNormal);
         g2.setColor(Color.WHITE);
-        int y = pantallaAlto / 2 - 30;
-        int lineHeight = 35;
+        int y = pantallaAlto / 2 + 20;
+        int lineHeight = 25;
 
         String vida = "Vida final: " + (int)jugadorSystem.getJugador().getVida() + " HP";
         int anchoVida = g2.getFontMetrics().stringWidth(vida);
         g2.drawString(vida, (pantallaAncho - anchoVida) / 2, y);
         
         y += lineHeight;
-        g2.setColor(Color.CYAN);
-        String pociones = "Pociones en arsenal: " + jugadorSystem.getPocionesEnArsenal();
-        int anchoPociones = g2.getFontMetrics().stringWidth(pociones);
-        g2.drawString(pociones, (pantallaAncho - anchoPociones) / 2, y);
-        
-        y += lineHeight;
-        g2.setColor(Color.GREEN);
         String acertijos = "Acertijos resueltos: " + jugadorSystem.getAcertijosResueltos();
         int anchoAcertijos = g2.getFontMetrics().stringWidth(acertijos);
         g2.drawString(acertijos, (pantallaAncho - anchoAcertijos) / 2, y);
