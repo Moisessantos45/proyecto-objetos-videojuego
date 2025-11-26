@@ -385,17 +385,15 @@ public class GamePanel extends JPanel implements Runnable {
                     gameEngine.getTiempoRestanteSegundos()
                 );
 
-                // Renderizar HUD multijugador si hay cliente conectado
-                if (client != null && client.isConnected()) {
-                    renderSystem.renderMultiplayerHUD(g2,
-                        gameEngine.getStatsLocal(),
-                        gameEngine.getRemotePlayers(),
-                        config.getAnchoPantalla(),
-                        config.getAltoPantalla(),
-                        true,  // mostrar ranking
-                        true   // mostrar distancia
-                    );
-                }
+                // Renderizar HUD multijugador (siempre, incluso en singleplayer)
+                renderSystem.renderMultiplayerHUD(g2,
+                    gameEngine.getStatsLocal(),
+                    gameEngine.getRemotePlayers(),
+                    config.getAnchoPantalla(),
+                    config.getAltoPantalla(),
+                    (client != null && client.isConnected()),  // mostrar ranking solo si hay conexión
+                    (client != null && client.isConnected())   // mostrar distancia solo si hay conexión
+                );
 
                 if (estadoJuego == GameState.PAUSA) {
                     renderSystem.renderPausa(g2, config.getAnchoPantalla(), config.getAltoPantalla());

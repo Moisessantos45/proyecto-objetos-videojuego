@@ -156,7 +156,10 @@ public class GameEngine implements IUpdateable {
         
         // Sincronizar vida en HUD cuando se usa poción
         if (statsLocal != null) {
-            statsLocal.setVida((int) jugadorSystem.getJugador().getVida());
+            int vidaActual = (int) jugadorSystem.getJugador().getVida();
+            statsLocal.setVida(vidaActual);
+            // DEBUG: Descomentar para ver sincronización en tiempo real
+            // System.out.println("DEBUG: Sincronizando vida: " + vidaActual);
         }
 
         int tileColision = jugadorSystem.getMovimientoSystem().getUltimaColision();

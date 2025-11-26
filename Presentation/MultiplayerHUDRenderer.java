@@ -32,6 +32,10 @@ public class MultiplayerHUDRenderer {
      */
     public void renderJugadorLocal(Graphics2D g2, PlayerStats statsLocal, 
                                    int pantallaAncho, int pantallaAlto) {
+        if (statsLocal == null) {
+            return;  // No renderizar si no hay stats disponibles
+        }
+        
         int x = MARGEN;
         int y = MARGEN;
         
