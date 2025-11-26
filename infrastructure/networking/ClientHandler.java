@@ -32,6 +32,7 @@ public class ClientHandler implements Runnable {
             while ((inputLine = in.readLine()) != null) {
                 // Si es un mensaje de posición, retransmitir a TODOS (incluyendo al remitente)
                 if (inputLine.startsWith("POS:")) {
+                    System.out.println("[SERVIDOR] Recibido POS de " + clientId + ": " + inputLine);
                     server.broadcastToAll(inputLine);
                 } else {
                     // Para otros mensajes (START_GAME, MAP_SEED), excluir al remitente

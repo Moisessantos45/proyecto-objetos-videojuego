@@ -204,11 +204,21 @@ public class GamePanel extends JPanel implements Runnable {
                             server = new GameServer(8888);
                             server.start();
                             serverID = server.getServerId();
+                            
+                            // El HOST también se conecta a sí mismo como cliente para sincronizar
+                            client = new GameClient("localhost", 8888);
+                            if (client.connect()) {
+                                System.out.println("HOST conectado a sí mismo como cliente");
+                            } else {
+                                System.err.println("ERROR: El HOST no pudo conectarse a sí mismo");
+                                client = null;
+                            }
                         } catch (Exception e) {
                             System.err.println("ERROR CRÍTICO AL INICIAR SERVIDOR: " + e.getMessage());
                             e.printStackTrace();
                             serverID = "ERROR-PUERTO";
                             server = null;
+                            client = null;
                         }
                     }
                     estadoJuego = GameState.SALA_ESPERA_HOST;
@@ -218,6 +228,10 @@ public class GamePanel extends JPanel implements Runnable {
                     if (server != null) {
                         server.stop();
                         server = null;
+                    }
+                    if (client != null) {
+                        client.disconnect();
+                        client = null;
                     }
                     estadoJuego = GameState.MENU_PRINCIPAL;
                     inputService.setTeclaEscape(false);
