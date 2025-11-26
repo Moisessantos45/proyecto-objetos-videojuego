@@ -7,7 +7,7 @@ public class InputService implements KeyListener {
     private boolean teclaArriba, teclaAbajo, teclaIzquierda, teclaDerecha;
     private boolean teclaEscape, teclaEnter, teclaEspacio;
     private boolean teclaUsarPocion;
-    private boolean tecla1, tecla2, tecla3, tecla4;
+    private boolean tecla1, tecla2, tecla3, tecla4, tecla5;
     private boolean teclaA, teclaB, teclaC, teclaD;
 
     public InputService() {
@@ -23,6 +23,7 @@ public class InputService implements KeyListener {
         this.tecla2 = false;
         this.tecla3 = false;
         this.tecla4 = false;
+        this.tecla5 = false;
         this.teclaA = false;
         this.teclaB = false;
         this.teclaC = false;
@@ -83,6 +84,9 @@ public class InputService implements KeyListener {
             case KeyEvent.VK_4:
                 tecla4 = true;
                 break;
+            case KeyEvent.VK_5:
+                tecla5 = true;
+                break;
         }
     }
 
@@ -133,6 +137,9 @@ public class InputService implements KeyListener {
                 break;
             case KeyEvent.VK_4:
                 tecla4 = false;
+                break;
+            case KeyEvent.VK_5:
+                tecla5 = false;
                 break;
         }
     }
@@ -238,6 +245,10 @@ public class InputService implements KeyListener {
     }
 
     public boolean isTecla5() {
-        return false;  // Tecla 5 no se usa actualmente, simulamos con teclaEscape
+        return tecla5;
+    }
+
+    public void setTecla5(boolean estado) {
+        this.tecla5 = estado;
     }
 }
