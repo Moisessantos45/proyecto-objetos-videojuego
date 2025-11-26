@@ -10,7 +10,9 @@ import infrastructure.AcertijosLoader;
 import java.util.ArrayList;
 import java.awt.image.BufferedImage;
 import infrastructure.ResourceLoader;
-
+import infrastructure.networking.GameClient;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GameEngine implements IUpdateable {
     private JugadorSystem jugadorSystem;
@@ -30,6 +32,11 @@ public class GameEngine implements IUpdateable {
     private Acertijo acertijoActual;
     private int cofreTileX = -1;
     private int cofreTileY = -1;
+    
+    // Multiplayer
+    private Map<String, RemotePlayer> remotePlayers = new ConcurrentHashMap<>();
+    private int lastX = -1, lastY = -1;
+    private String lastDir = "";
     
     // Timer variables
     private static final long TIEMPO_LIMITE_MS = 3 * 60 * 1000; // 3 minutos en milisegundos
@@ -402,6 +409,52 @@ public class GameEngine implements IUpdateable {
     public int getTiempoRestanteSegundos() {
         return (int) (getTiempoRestanteMs() / 1000);
     }
+
+    public void updateMultiplayer(GameClient client) {
+        if (client == null || !client.isConnected()) return;
+
+        // 1. Procesar mensajes recibidos
+        String msg;
+        while ((msg = client.getNextMessage()) != null) {
+            if (msg.startsWith("POS:")) {
+                // Formato: POS:id:x:y:dir
+                String[] parts = msg.split(":");
+                if (parts.length >= 5) {
+                    String id = parts[1];
+                    // Ignorar mi propia posición si llegara a rebotar
+                    if (client.getMyId() != null && id.equals(client.getMyId())) continue;
+                    
+                    try {
+                        int x = Integer.parseInt(parts[2]);
+                        int y = Integer.parseInt(parts[3]);
+                        String dir = parts[4];
+                        
+                        remotePlayers.computeIfAbsent(id, k -> new RemotePlayer(k, x, y))
+                                     .updatePosition(x, y, dir);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Error parseando posición: " + msg);
+                    }
+                }
+            }
+        }
+
+        // 2. Enviar mi posición si ha cambiado
+        int currentX = jugadorSystem.getMundoX();
+        int currentY = jugadorSystem.getMundoY();
+        String currentDir = jugadorSystem.getJugador().getDireccion();
+
+        if (currentX != lastX || currentY != lastY || !currentDir.equals(lastDir)) {
+            client.sendPosition(currentX, currentY, currentDir);
+            lastX = currentX;
+            lastY = currentY;
+            lastDir = currentDir;
+        }
+    }
+
+    public Map<String, RemotePlayer> getRemotePlayers() {
+        return remotePlayers;
+    }
+}
     
     public boolean isJuegoTerminado() {
         return juegoTerminado;

@@ -26,11 +26,27 @@ public class RenderSystem {
                            CamaraSystem camara,
                            JugadorSystem jugadorSystem,
                            EnemigoSystem enemigoSystem,
+                           java.util.Map<String, domain.RemotePlayer> remotePlayers,
                            int pantallaAncho,
                            int pantallaAlto,
                            int tiempoRestanteSegundos) {
         
         mapa.draw(g2, camara.getCamaraX(), camara.getCamaraY());
+        
+        // Renderizar jugadores remotos
+        if (remotePlayers != null) {
+            for (domain.RemotePlayer remote : remotePlayers.values()) {
+                EntidadModel entidad = remote.getEntidad();
+                int screenX = entidad.getMundoX() - camara.getCamaraX();
+                int screenY = entidad.getMundoY() - camara.getCamaraY();
+                
+                // Solo renderizar si está en pantalla
+                if (screenX > -tamanioTile && screenX < pantallaAncho &&
+                    screenY > -tamanioTile && screenY < pantallaAlto) {
+                    entidadRenderer.render(g2, entidad, screenX, screenY);
+                }
+            }
+        }
         
         enemigoRenderer.renderTodos(g2, enemigoSystem.getEnemigos(), 
                                     camara.getCamaraX(), camara.getCamaraY());

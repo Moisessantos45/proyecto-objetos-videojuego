@@ -11,10 +11,12 @@ public class ClientHandler implements Runnable {
     private GameServer server;
     private PrintWriter out;
     private BufferedReader in;
+    private String clientId;
 
-    public ClientHandler(Socket socket, GameServer server) {
+    public ClientHandler(Socket socket, GameServer server, String clientId) {
         this.socket = socket;
         this.server = server;
+        this.clientId = clientId;
     }
 
     @Override
@@ -22,6 +24,9 @@ public class ClientHandler implements Runnable {
         try {
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            // Enviar ID al cliente al conectar
+            sendMessage("WELCOME:" + clientId);
 
             String inputLine;
             while ((inputLine = in.readLine()) != null) {

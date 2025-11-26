@@ -138,6 +138,12 @@ public class GamePanel extends JPanel implements Runnable {
                     inputService.setTeclaEscape(false);
                 } else {
                     gameEngine.update();
+                    
+                    // Actualizar multijugador si hay cliente conectado
+                    if (client != null && client.isConnected()) {
+                        gameEngine.updateMultiplayer(client);
+                    }
+                    
                     if (gameEngine.isJuegoTerminado()) {
                         estadoJuego = GameState.JUEGO_TERMINADO;
                     } else if (gameEngine.isPausa()) {
@@ -338,6 +344,7 @@ public class GamePanel extends JPanel implements Runnable {
                     gameEngine.getCamaraSystem(),
                     gameEngine.getJugadorSystem(),
                     gameEngine.getEnemigoSystem(),
+                    gameEngine.getRemotePlayers(),
                     config.getAnchoPantalla(),
                     config.getAltoPantalla(),
                     gameEngine.getTiempoRestanteSegundos()

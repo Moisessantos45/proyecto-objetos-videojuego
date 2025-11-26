@@ -31,12 +31,13 @@ public class GameServer {
             try {
                 while (running) {
                     Socket socket = serverSocket.accept();
-                    ClientHandler client = new ClientHandler(socket, this);
+                    String clientId = UUID.randomUUID().toString();
+                    ClientHandler client = new ClientHandler(socket, this, clientId);
                     synchronized (clients) {
                         clients.add(client);
                     }
                     new Thread(client).start();
-                    System.out.println("Nuevo cliente conectado desde: " + socket.getInetAddress());
+                    System.out.println("Nuevo cliente conectado desde: " + socket.getInetAddress() + " ID: " + clientId);
                 }
             } catch (IOException e) {
                 if (running) e.printStackTrace();
@@ -56,9 +57,11 @@ public class GameServer {
     public void broadcast(String message, ClientHandler sender) {
         synchronized (clients) {
             for (ClientHandler client : clients) {
-                // Opcional: no enviar al remitente si no es necesario
-                // if (client != sender) 
-                client.sendMessage(message);
+                // No enviar al remitente si es un mensaje de actualización de estado
+                // Pero sí enviar si sender es null (mensaje del sistema)
+                if (sender == null || client != sender) { 
+                    client.sendMessage(message);
+                }
             }
         }
     }

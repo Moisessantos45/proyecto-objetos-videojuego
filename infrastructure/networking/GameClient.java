@@ -16,6 +16,7 @@ public class GameClient {
     private int port;
     private boolean connected = false;
     private Queue<String> messageQueue = new ConcurrentLinkedQueue<>();
+    private String myId;
 
     public GameClient(String serverAddress, int port) {
         this.serverAddress = serverAddress;
@@ -51,14 +52,32 @@ public class GameClient {
         try {
             String message;
             while ((message = in.readLine()) != null) {
-                System.out.println("Mensaje del servidor: " + message);
-                messageQueue.offer(message);
+                if (message.startsWith("WELCOME:")) {
+                    myId = message.split(":")[1];
+                    System.out.println("Mi ID asignado es: " + myId);
+                } else {
+                    // Solo imprimir mensajes que no sean de posición para no saturar la consola
+                    if (!message.startsWith("POS:")) {
+                        System.out.println("Mensaje del servidor: " + message);
+                    }
+                    messageQueue.offer(message);
+                }
             }
         } catch (IOException e) {
             System.out.println("Desconectado del servidor");
         } finally {
             connected = false;
         }
+    }
+
+    public void sendPosition(int x, int y, String direction) {
+        if (myId != null) {
+            sendMessage("POS:" + myId + ":" + x + ":" + y + ":" + direction);
+        }
+    }
+
+    public String getMyId() {
+        return myId;
     }
 
     public String getNextMessage() {
