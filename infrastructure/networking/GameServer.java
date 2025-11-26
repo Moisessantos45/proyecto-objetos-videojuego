@@ -47,6 +47,8 @@ public class GameServer {
 
     public void stop() {
         running = false;
+        // Notificar a todos los clientes que el servidor se cierra
+        broadcast("SERVIDOR_CERRADO", null);
         try {
             if (serverSocket != null) serverSocket.close();
         } catch (IOException e) {

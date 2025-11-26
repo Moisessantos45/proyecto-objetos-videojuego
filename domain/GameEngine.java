@@ -451,6 +451,10 @@ public class GameEngine implements IUpdateable {
                 } catch (Exception e) {
                     System.err.println("Error al procesar seed: " + e.getMessage());
                 }
+            } else if (msg.equals("SERVIDOR_CERRADO")) {
+                System.out.println("[CLIENTE] Servidor cerrado por el host");
+                client.disconnect();
+                juegoTerminado = true;
             }
         }
 

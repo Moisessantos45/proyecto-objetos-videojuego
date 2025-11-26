@@ -144,7 +144,11 @@ public class GamePanel extends JPanel implements Runnable {
                         gameEngine.updateMultiplayer(client);
                     }
                     
-                    if (gameEngine.isJuegoTerminado()) {
+                    // Verificar si el servidor fue cerrado o conexión perdida
+                    if (client != null && !client.isConnected()) {
+                        System.out.println("Conexión con servidor perdida");
+                        estadoJuego = GameState.MENU_PRINCIPAL;
+                    } else if (gameEngine.isJuegoTerminado()) {
                         estadoJuego = GameState.JUEGO_TERMINADO;
                     } else if (gameEngine.isPausa()) {
                         estadoJuego = GameState.PAUSA;
