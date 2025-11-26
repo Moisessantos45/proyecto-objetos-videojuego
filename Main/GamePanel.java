@@ -10,6 +10,8 @@ import Presentation.RenderSystem;
 import domain.GameEngine;
 import infrastructure.ConfigManager;
 import infrastructure.InputService;
+import infrastructure.networking.GameClient;
+import infrastructure.networking.GameServer;
 import model.GameConfig;
 
 public class GamePanel extends JPanel implements Runnable {
@@ -35,6 +37,9 @@ public class GamePanel extends JPanel implements Runnable {
     private RenderSystem renderSystem;
     private InputService inputService;
     private Thread hebraJuego;
+    
+    private GameServer server;
+    private GameClient client;
     
     private String serverID = "";
     private String inputServerID = "";
@@ -188,16 +193,32 @@ public class GamePanel extends JPanel implements Runnable {
                 break;
             case CREAR_SERVIDOR:
                 if (inputService.isTeclaEnter()) {
-                    serverID = generarServerID();
+                    if (server == null) {
+                        try {
+                            server = new GameServer(8080);
+                            server.start();
+                            serverID = server.getServerId();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            serverID = "ERROR";
+                        }
+                    }
                     estadoJuego = GameState.SALA_ESPERA_HOST;
                     usuariosConectados = 1;
                     inputService.setTeclaEnter(false);
                 } else if (inputService.isTeclaEscape()) {
+                    if (server != null) {
+                        server.stop();
+                        server = null;
+                    }
                     estadoJuego = GameState.MENU_PRINCIPAL;
                     inputService.setTeclaEscape(false);
                 }
                 break;
             case SALA_ESPERA_HOST:
+                if (server != null) {
+                    usuariosConectados = 1 + server.getConnectedPlayers();
+                }
                 if (inputService.isTeclaEnter()) {
                     estadoJuego = GameState.JUGANDO;
                     inputService.setTeclaEnter(false);
@@ -217,8 +238,12 @@ public class GamePanel extends JPanel implements Runnable {
                 break;
             case UNIRSE_SERVIDOR:
                 if (inputService.isTeclaEnter() && !inputServerID.isEmpty()) {
-                    estadoJuego = GameState.SALA_ESPERA_CLIENTE;
-                    usuariosConectados = 2;
+                    String targetIp = inputServerID.contains(".") ? inputServerID : "localhost";
+                    client = new GameClient(targetIp, 8080);
+                    if (client.connect()) {
+                        estadoJuego = GameState.SALA_ESPERA_CLIENTE;
+                        usuariosConectados = 2;
+                    }
                     inputService.setTeclaEnter(false);
                 } else if (inputService.isTeclaEscape()) {
                     estadoJuego = GameState.MENU_PRINCIPAL;
@@ -227,6 +252,10 @@ public class GamePanel extends JPanel implements Runnable {
                 break;
             case SALA_ESPERA_CLIENTE:
                 if (inputService.isTeclaEscape()) {
+                    if (client != null) {
+                        client.disconnect();
+                        client = null;
+                    }
                     estadoJuego = GameState.MENU_PRINCIPAL;
                     inputService.setTeclaEscape(false);
                 }
