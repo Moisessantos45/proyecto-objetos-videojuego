@@ -245,7 +245,13 @@ public class GamePanel extends JPanel implements Runnable {
                 break;
             case UNIRSE_SERVIDOR:
                 if (inputService.isTeclaEnter() && !inputServerID.isEmpty()) {
-                    String targetIp = inputServerID.contains(".") ? inputServerID : "localhost";
+                    String targetIp = inputServerID.trim();
+                    if (!targetIp.contains(".")) {
+                        targetIp = "localhost";
+                    }
+                    // Limpiar posibles caracteres invisibles o espacios
+                    targetIp = targetIp.replaceAll("\\s+", "");
+                    
                     client = new GameClient(targetIp, 8888);
                     if (client.connect()) {
                         estadoJuego = GameState.SALA_ESPERA_CLIENTE;
