@@ -66,6 +66,14 @@ public class GameServer {
         }
     }
 
+    public void broadcastToAll(String message) {
+        synchronized (clients) {
+            for (ClientHandler client : clients) {
+                client.sendMessage(message);
+            }
+        }
+    }
+
     public void removeClient(ClientHandler client) {
         synchronized (clients) {
             clients.remove(client);

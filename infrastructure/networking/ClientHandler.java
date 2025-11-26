@@ -30,7 +30,13 @@ public class ClientHandler implements Runnable {
 
             String inputLine;
             while ((inputLine = in.readLine()) != null) {
-                server.broadcast(inputLine, this);
+                // Si es un mensaje de posición, retransmitir a TODOS (incluyendo al remitente)
+                if (inputLine.startsWith("POS:")) {
+                    server.broadcastToAll(inputLine);
+                } else {
+                    // Para otros mensajes (START_GAME, MAP_SEED), excluir al remitente
+                    server.broadcast(inputLine, this);
+                }
             }
         } catch (IOException e) {
             System.out.println("Error en ClientHandler: " + e.getMessage());
