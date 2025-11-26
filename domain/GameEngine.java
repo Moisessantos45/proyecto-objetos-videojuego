@@ -38,6 +38,7 @@ public class GameEngine implements IUpdateable {
     private Map<String, RemotePlayer> remotePlayers = new ConcurrentHashMap<>();
     private int lastX = -1, lastY = -1;
     private String lastDir = "";
+    private int lastVidaSent = -1;  // Trackear última vida enviada para evitar envíos innecesarios
     private PlayerStats statsLocal; // Estadísticas del jugador local
     
     // Timer variables
@@ -456,6 +457,29 @@ public class GameEngine implements IUpdateable {
                         System.err.println("Error parseando posición: " + msg);
                     }
                 }
+            } else if (msg.startsWith("VIDA:")) {
+                // Formato: VIDA:id:vida:vidaMaxima
+                String[] parts = msg.split(":");
+                if (parts.length >= 4) {
+                    String id = parts[1];
+                    // Ignorar mi propia vida si llegara a rebotar
+                    if (client.getMyId() != null && id.equals(client.getMyId())) {
+                        continue;
+                    }
+                    
+                    try {
+                        int vida = Integer.parseInt(parts[2]);
+                        int vidaMaxima = Integer.parseInt(parts[3]);
+                        
+                        RemotePlayer remotePlayer = remotePlayers.get(id);
+                        if (remotePlayer != null) {
+                            remotePlayer.getStats().setVida(vida);
+                            remotePlayer.getStats().setVidaMaxima(vidaMaxima);
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("Error parseando vida: " + msg);
+                    }
+                }
             } else if (msg.startsWith("MAP_SEED:")) {
                 try {
                     long seed = Long.parseLong(msg.split(":")[1]);
@@ -480,6 +504,15 @@ public class GameEngine implements IUpdateable {
             lastX = currentX;
             lastY = currentY;
             lastDir = currentDir;
+        }
+
+        // 3. Enviar mi vida si ha cambiado
+        int currentVida = (int) jugadorSystem.getJugador().getVida();
+        int vidaMaxima = 100;  // Vida máxima del jugador
+        
+        if (currentVida != lastVidaSent) {
+            client.sendVida(currentVida, vidaMaxima);
+            lastVidaSent = currentVida;
         }
     }
 

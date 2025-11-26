@@ -76,6 +76,12 @@ public class GameClient {
         }
     }
 
+    public void sendVida(int vida, int vidaMaxima) {
+        if (myId != null) {
+            sendMessage("VIDA:" + myId + ":" + vida + ":" + vidaMaxima);
+        }
+    }
+
     public String getMyId() {
         return myId;
     }

@@ -51,6 +51,10 @@ public class PlayerStats {
         return vidaMaxima;
     }
 
+    public void setVidaMaxima(int vidaMaxima) {
+        this.vidaMaxima = vidaMaxima;
+    }
+
     public int getAcertijosResueltos() {
         return acertijosResueltos;
     }

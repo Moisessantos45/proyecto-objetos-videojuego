@@ -34,7 +34,13 @@ public class ClientHandler implements Runnable {
                 if (inputLine.startsWith("POS:")) {
                     System.out.println("[SERVIDOR] Recibido POS de " + clientId + ": " + inputLine);
                     server.broadcastToAll(inputLine);
-                } else {
+                } 
+                // Si es un mensaje de vida, retransmitir a TODOS
+                else if (inputLine.startsWith("VIDA:")) {
+                    System.out.println("[SERVIDOR] Recibido VIDA de " + clientId + ": " + inputLine);
+                    server.broadcastToAll(inputLine);
+                }
+                else {
                     // Para otros mensajes (START_GAME, MAP_SEED), excluir al remitente
                     server.broadcast(inputLine, this);
                 }
