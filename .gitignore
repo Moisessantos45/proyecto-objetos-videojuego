@@ -1,0 +1,11 @@
++.txt
+*.md
++.txt
+*.md
+*.bat
+*.class
+*.jar
+*.log
+*.sh
+sources.txt
+bin

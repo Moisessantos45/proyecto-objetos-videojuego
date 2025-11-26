@@ -222,6 +222,9 @@ public class GamePanel extends JPanel implements Runnable {
                     usuariosConectados = 1 + server.getConnectedPlayers();
                 }
                 if (inputService.isTeclaEnter()) {
+                    if (server != null) {
+                        server.broadcast("START_GAME", null);
+                    }
                     estadoJuego = GameState.JUGANDO;
                     inputService.setTeclaEnter(false);
                 } else if (inputService.isTeclaC()) {
@@ -264,6 +267,13 @@ public class GamePanel extends JPanel implements Runnable {
                 }
                 break;
             case SALA_ESPERA_CLIENTE:
+                if (client != null) {
+                    String msg = client.getNextMessage();
+                    if (msg != null && msg.equals("START_GAME")) {
+                        estadoJuego = GameState.JUGANDO;
+                    }
+                }
+                
                 if (inputService.isTeclaEscape()) {
                     if (client != null) {
                         client.disconnect();

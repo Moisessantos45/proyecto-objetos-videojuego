@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class GameClient {
     private Socket socket;
@@ -13,6 +15,7 @@ public class GameClient {
     private String serverAddress;
     private int port;
     private boolean connected = false;
+    private Queue<String> messageQueue = new ConcurrentLinkedQueue<>();
 
     public GameClient(String serverAddress, int port) {
         this.serverAddress = serverAddress;
@@ -48,14 +51,18 @@ public class GameClient {
         try {
             String message;
             while ((message = in.readLine()) != null) {
-                // Aquí procesaríamos los mensajes del servidor (actualizaciones de juego, etc.)
                 System.out.println("Mensaje del servidor: " + message);
+                messageQueue.offer(message);
             }
         } catch (IOException e) {
             System.out.println("Desconectado del servidor");
         } finally {
             connected = false;
         }
+    }
+
+    public String getNextMessage() {
+        return messageQueue.poll();
     }
 
     public void sendMessage(String message) {
