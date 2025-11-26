@@ -13,6 +13,7 @@ import java.awt.image.BufferedImage;
 import infrastructure.ResourceLoader;
 import infrastructure.networking.GameClient;
 import java.util.Map;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GameEngine implements IUpdateable {
@@ -40,6 +41,7 @@ public class GameEngine implements IUpdateable {
     private String lastDir = "";
     private int lastVidaSent = -1;  // Trackear última vida enviada para evitar envíos innecesarios
     private int lastAcertijosCount = -1;  // Trackear últimos acertijos enviados para evitar envíos innecesarios
+    private Map<String, Boolean> cofresCerradosEnviados = new ConcurrentHashMap<>();  // Trackear cofres cerrados ya enviados
     private PlayerStats statsLocal; // Estadísticas del jugador local
     
     // Timer variables
@@ -250,6 +252,8 @@ public class GameEngine implements IUpdateable {
                 
                 if (cofreTileX != -1 && cofreTileY != -1) {
                     getMapa().setTileEnMundo(cofreTileX, cofreTileY, GeneradorMundo.TILE_COFRE_CERRADO);
+                    // Trackear que este cofre fue cerrado para no re-enviarlo
+                    cofresCerradosEnviados.put(cofreTileX + "," + cofreTileY, true);
                 }
             } else {
                 acertijoActual.decrementarIntentos();
@@ -509,6 +513,20 @@ public class GameEngine implements IUpdateable {
                             System.err.println("Error parseando acertijos: " + msg);
                         }
                     }
+                } else if (msg.startsWith("COFRE_CERRADO:")) {
+                    // Formato: COFRE_CERRADO:id:tileX:tileY
+                    String[] parts = msg.split(":");
+                    if (parts.length >= 4) {
+                        try {
+                            int tileX = Integer.parseInt(parts[2]);
+                            int tileY = Integer.parseInt(parts[3]);
+                            
+                            // Marcar cofre como cerrado en el mapa
+                            getMapa().setTileEnMundo(tileX, tileY, GeneradorMundo.TILE_COFRE_CERRADO);
+                        } catch (NumberFormatException e) {
+                            System.err.println("Error parseando cofre cerrado: " + msg);
+                        }
+                    }
                 } else if (msg.startsWith("MAP_SEED:")) {
                     try {
                         long seed = Long.parseLong(msg.split(":")[1]);
@@ -553,6 +571,26 @@ public class GameEngine implements IUpdateable {
             if (currentAcertijos != lastAcertijosCount) {
                 client.sendAcertijos(currentAcertijos);
                 lastAcertijosCount = currentAcertijos;
+            }
+
+            // Enviar cofres cerrados
+            List<String> cofresARemover = new ArrayList<>();
+            for (Map.Entry<String, Boolean> entry : cofresCerradosEnviados.entrySet()) {
+                String[] coords = entry.getKey().split(",");
+                if (coords.length == 2) {
+                    try {
+                        int tileX = Integer.parseInt(coords[0]);
+                        int tileY = Integer.parseInt(coords[1]);
+                        client.sendCofreCerrado(tileX, tileY);
+                        cofresARemover.add(entry.getKey());
+                    } catch (NumberFormatException e) {
+                        // Ignorar
+                    }
+                }
+            }
+            // Limpiar cofres ya enviados
+            for (String key : cofresARemover) {
+                cofresCerradosEnviados.remove(key);
             }
         }
     }

@@ -45,6 +45,11 @@ public class ClientHandler implements Runnable {
                     System.out.println("[SERVIDOR] Recibido ACERTIJOS de " + clientId + ": " + inputLine);
                     server.broadcastToAll(inputLine);
                 }
+                // Si es un mensaje de cofre cerrado, retransmitir a TODOS
+                else if (inputLine.startsWith("COFRE_CERRADO:")) {
+                    System.out.println("[SERVIDOR] Recibido COFRE_CERRADO de " + clientId + ": " + inputLine);
+                    server.broadcastToAll(inputLine);
+                }
                 else {
                     // Para otros mensajes (START_GAME, MAP_SEED), excluir al remitente
                     server.broadcast(inputLine, this);

@@ -88,6 +88,12 @@ public class GameClient {
         }
     }
 
+    public void sendCofreCerrado(int tileX, int tileY) {
+        if (myId != null) {
+            sendMessage("COFRE_CERRADO:" + myId + ":" + tileX + ":" + tileY);
+        }
+    }
+
     public String getMyId() {
         return myId;
     }
