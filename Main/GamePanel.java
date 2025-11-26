@@ -195,7 +195,7 @@ public class GamePanel extends JPanel implements Runnable {
                 if (inputService.isTeclaEnter()) {
                     if (server == null) {
                         try {
-                            server = new GameServer(8080);
+                            server = new GameServer(8888);
                             server.start();
                             serverID = server.getServerId();
                         } catch (Exception e) {
@@ -239,7 +239,7 @@ public class GamePanel extends JPanel implements Runnable {
             case UNIRSE_SERVIDOR:
                 if (inputService.isTeclaEnter() && !inputServerID.isEmpty()) {
                     String targetIp = inputServerID.contains(".") ? inputServerID : "localhost";
-                    client = new GameClient(targetIp, 8080);
+                    client = new GameClient(targetIp, 8888);
                     if (client.connect()) {
                         estadoJuego = GameState.SALA_ESPERA_CLIENTE;
                         usuariosConectados = 2;
