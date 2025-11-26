@@ -229,6 +229,9 @@ public class GamePanel extends JPanel implements Runnable {
                 }
                 if (inputService.isTeclaEnter()) {
                     if (server != null) {
+                        // Enviar seed del mapa antes de iniciar
+                        long seed = gameEngine.getSeed();
+                        server.broadcast("MAP_SEED:" + seed, null);
                         server.broadcast("START_GAME", null);
                     }
                     estadoJuego = GameState.JUGANDO;
@@ -274,9 +277,31 @@ public class GamePanel extends JPanel implements Runnable {
                 break;
             case SALA_ESPERA_CLIENTE:
                 if (client != null) {
-                    String msg = client.getNextMessage();
-                    if (msg != null && msg.equals("START_GAME")) {
-                        estadoJuego = GameState.JUGANDO;
+                    // Procesar mensajes en la sala de espera (como la seed)
+                    if (client.isConnected()) {
+                        gameEngine.updateMultiplayer(client);
+                    }
+                    
+                    // Verificar si ya inició el juego (revisando la cola manualmente o esperando el cambio de estado)
+                    // Nota: updateMultiplayer ya consume los mensajes, así que necesitamos una forma de saber si llegó START_GAME
+                    // Modificaremos GameEngine para que tenga un flag o evento, o mejor aún:
+                    // Haremos que updateMultiplayer maneje START_GAME internamente o lo dejaremos aquí.
+                    // Dado que updateMultiplayer consume la cola, debemos manejar START_GAME dentro de GameEngine o aquí.
+                    // REVISIÓN: GameEngine.updateMultiplayer consume la cola. El mensaje START_GAME se perdería.
+                    // SOLUCIÓN: No llamar a updateMultiplayer aquí, sino procesar manualmente la cola buscando MAP_SEED y START_GAME.
+                    
+                    String msg;
+                    while ((msg = client.getNextMessage()) != null) {
+                        if (msg.startsWith("MAP_SEED:")) {
+                            try {
+                                long seed = Long.parseLong(msg.split(":")[1]);
+                                gameEngine.reiniciarConSeed(seed);
+                            } catch (Exception e) {
+                                System.err.println("Error seed: " + e.getMessage());
+                            }
+                        } else if (msg.equals("START_GAME")) {
+                            estadoJuego = GameState.JUGANDO;
+                        }
                     }
                 }
                 

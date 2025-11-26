@@ -36,6 +36,10 @@ public class GeneradorMundo {
         this.resourceLoader = ResourceLoader.getInstance();
     }
 
+    public long getSeed() {
+        return seed;
+    }
+
     public void generarChunk(Chunk chunk) {
         if (chunk.isGenerado()) {
             return;
@@ -177,10 +181,6 @@ public class GeneradorMundo {
 
     private double suavizar(double t) {
         return t * t * (3.0 - 2.0 * t);
-    }
-
-    public long getSeed() {
-        return seed;
     }
 
     public void setSeed(long seed) {

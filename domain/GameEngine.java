@@ -328,7 +328,7 @@ public class GameEngine implements IUpdateable {
         
         // REGENERAR MAPA CON NUEVO SEED
         long nuevoSeed = System.currentTimeMillis();
-        mapaInfinito.regenerarConNuevoSeed(nuevoSeed);
+        mapaInfinito.reiniciarConSeed(nuevoSeed);
         
         // Reiniciar cámara y mapa
         camaraSystem.seguirEntidad(
@@ -435,6 +435,13 @@ public class GameEngine implements IUpdateable {
                         System.err.println("Error parseando posición: " + msg);
                     }
                 }
+            } else if (msg.startsWith("MAP_SEED:")) {
+                try {
+                    long seed = Long.parseLong(msg.split(":")[1]);
+                    reiniciarConSeed(seed);
+                } catch (Exception e) {
+                    System.err.println("Error al procesar seed: " + e.getMessage());
+                }
             }
         }
 
@@ -449,6 +456,16 @@ public class GameEngine implements IUpdateable {
             lastY = currentY;
             lastDir = currentDir;
         }
+    }
+
+    public void reiniciarConSeed(long seed) {
+        mapaInfinito.reiniciarConSeed(seed);
+        // Forzar actualización de chunks alrededor del jugador
+        mapaInfinito.actualizarChunksActivos(jugadorSystem.getMundoX(), jugadorSystem.getMundoY());
+    }
+
+    public long getSeed() {
+        return mapaInfinito.getSeed();
     }
 
     public Map<String, RemotePlayer> getRemotePlayers() {

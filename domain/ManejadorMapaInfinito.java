@@ -299,6 +299,21 @@ public class ManejadorMapaInfinito {
         return false;
     }
 
+    public void reiniciarConSeed(long seed) {
+        this.chunksActivos.clear();
+        this.itemsConsumibles.clear();
+        this.generador = new GeneradorMundo(seed, this);
+        System.out.println("Mapa reiniciado con nueva seed: " + seed);
+    }
+
+    public long getSeed() {
+        return generador.getSeed();
+    }
+
+    public List<ConsumableItemModel> getItemsConsumibles() {
+        return itemsConsumibles;
+    }
+
     public Tile[] getTiles() {
         return tiles;
     }
@@ -309,29 +324,5 @@ public class ManejadorMapaInfinito {
 
     public void agregarItem(ConsumableItemModel item) {
         this.itemsConsumibles.add(item);
-    }
-
-    public List<ConsumableItemModel> getItemsConsumibles() {
-        return itemsConsumibles;
-    }
-
-    public void reiniciarChunks() {
-        chunksActivos.clear();
-        itemsConsumibles.clear();
-    }
-    
-    public void regenerarConNuevoSeed(long nuevoSeed) {
-        // Cambiar el seed del generador
-        generador.cambiarSeed(nuevoSeed);
-        
-        // Limpiar chunks e items
-        chunksActivos.clear();
-        itemsConsumibles.clear();
-        
-        System.out.println("Mapa regenerado con nuevo seed: " + nuevoSeed);
-    }
-    
-    public long getSeedActual() {
-        return generador.getSeed();
     }
 }
