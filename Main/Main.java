@@ -19,6 +19,9 @@ import model.GameConfig;
 public class Main {
 
     public static void main(String[] args) {
+        // Forzar uso de IPv4 para evitar problemas de conexión entre Windows/Linux
+        System.setProperty("java.net.preferIPv4Stack", "true");
+
         // 1. INFRASTRUCTURE - Servicios y configuración
         ConfigManager configManager = ConfigManager.getInstance();
         GameConfig config = configManager.getGameConfig();
