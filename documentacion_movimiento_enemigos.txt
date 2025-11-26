@@ -1,0 +1,133 @@
+# Documentación Detallada: IA y Movimiento de Enemigos
+
+Este documento describe la inteligencia artificial (IA) que gobierna el comportamiento de los enemigos, con un enfoque en su sistema de movimiento, detección y persecución del jugador.
+
+---
+
+## Sección 1: Arquitectura de la IA - Un Modelo de Estados Finitos (FSM)
+
+La "inteligencia" de cada enemigo se basa en una Máquina de Estados Finitos (FSM). Esto significa que un enemigo solo puede estar en un estado de comportamiento a la vez (ej. PATRULLANDO, PERSIGUIENDO) y transita entre estos estados basándose en estímulos externos, principalmente la proximidad del jugador.
+
+### Componentes Clave de la Arquitectura:
+
+- domain/EnemigoSystem.java: Es el "cerebro" del enemigo. Su método update() contiene la FSM y toma todas las decisiones de alto nivel (qué hacer y hacia dónde moverse).
+- model/EnemigoModel.java: Es la "memoria" y el "cuerpo". Almacena el estado actual de un enemigo (enum AIState), su posición, velocidad, vida, y parámetros de IA como su radio de patrullaje y su radio de agresividad.
+- domain/MovimientoSystem.java y domain/ColisionSystem.java: Son las "piernas". Reciben la intención de movimiento del EnemigoSystem y se encargan de la ejecución física, aplicando la velocidad, actualizando coordenadas y evitando obstáculos, de forma idéntica a como lo hacen para el jugador.
+
+---
+
+## Sección 2: El Estado Pasivo - Patrullaje Dentro de un Radio
+
+Este es el comportamiento por defecto del enemigo cuando no es consciente de la presencia del jugador.
+
+- Propósito: Dar vida al mundo, haciendo que los enemigos no sean estatuas estáticas. Se mueven de forma semi-aleatoria dentro de un área predefinida.
+- Técnica - Área de Patrullaje:
+  1.  Cada EnemigoModel almacena sus coordenadas de origen (originX, originY), que son las coordenadas donde fue generado.
+  2.  También tiene un patrolRadius, que define la distancia máxima a la que puede alejarse de su origen.
+
+- Lógica Detallada:
+  1.  El EnemigoSystem utiliza un contador de tiempo para cada enemigo (actionLockCounter).
+  2.  Este contador se incrementa en cada fotograma. Cuando supera un umbral (ej. 120 frames, o 2 segundos a 60 FPS), el enemigo toma una nueva decisión.
+  3.  Se elige una dirección al azar (arriba, abajo, izquierda o derecha).
+  4.  El sistema establece esta nueva dirección en el Transform del enemigo y resetea el contador.
+  5.  El enemigo se moverá en esa dirección (manejado por MovimientoSystem) hasta que el contador expire de nuevo o hasta que choque con una pared (manejado por ColisionSystem).
+  (Nota: Una implementación más avanzada comprobaría si el movimiento aleatorio lo saca de su radio de patrulla y, en ese caso, lo forzaría a moverse hacia su origen.)
+
+- Código Ilustrativo en EnemigoSystem.java (dentro de update()):
+  java
+  // Asumiendo que el modelo del enemigo tiene estas propiedades
+  // AIState state = enemigo.getAIState();
+
+  if (state == AIState.PATROLLING) {
+      enemigo.actionLockCounter++;
+      if (enemigo.actionLockCounter >= 120) {
+          Random random = new Random();
+          int i = random.nextInt(4); // 0=arriba, 1=abajo, 2=izquierda, 3=derecha
+          
+          switch (i) {
+              case 0: enemigo.getTransform().setDirection("up"); break;
+              case 1: enemigo.getTransform().setDirection("down"); break;
+              case 2: enemigo.getTransform().setDirection("left"); break;
+              case 3: enemigo.getTransform().setDirection("right"); break;
+          }
+          enemigo.actionLockCounter = 0;
+      }
+  }
+  
+
+---
+
+## Sección 3: Detección del Jugador - El Radio de Agresividad ("Aggro")
+
+Este es el mecanismo que hace que el enemigo "despierte" y se vuelva hostil.
+
+- Técnica: Cálculo de distancia euclidiana entre el enemigo y el jugador.
+- Lógica Detallada y Optimización:
+  1.  En cada fotograma, dentro de EnemigoSystem.update(), lo primero es calcular la distancia al jugador.
+  2.  Optimización Clave: Calcular una raíz cuadrada (Math.sqrt) es una operación computacionalmente costosa. Para evitarla, se trabaja con distancias al cuadrado.
+  3.  Se obtiene la diferencia de coordenadas: dx = jugador.worldX - enemigo.worldX y dy = jugador.worldY - enemigo.worldY.
+  4.  Se calcula la distancia al cuadrado: distanciaSq = (dx  dx) + (dy  dy).
+  5.  Se compara este valor con el radio de agresividad del enemigo, también al cuadrado: aggroRadiusSq = enemigo.aggroRadius  enemigo.aggroRadius.
+  6.  Si distanciaSq < aggroRadiusSq, el jugador ha entrado en el radio. El estado del enemigo cambia inmediatamente de PATROLLING a CHASING.
+
+- Código Ilustrativo en EnemigoSystem.java (dentro de update()):
+  java
+  // Obtener jugador y enemigo
+  int dx = jugador.getTransform().x - enemigo.getTransform().x;
+  int dy = jugador.getTransform().y - enemigo.getTransform().y;
+  double distanceSq = Math.pow(dx, 2) + Math.pow(dy, 2);
+  double aggroRadiusSq = Math.pow(enemigo.getAggroRadius(), 2);
+
+  if (distanceSq < aggroRadiusSq) {
+      enemigo.setAIState(AIState.CHASING);
+  } else {
+      enemigo.setAIState(AIState.PATROLLING);
+  }
+  
+
+---
+
+## Sección 4: El Estado Activo - Persecución del Jugador
+
+Una vez que el jugador es detectado, el enemigo comienza la persecución.
+
+- Algoritmo - Seguimiento "Codicioso" (Greedy Tracking): Se utiliza un algoritmo de seguimiento simple y eficaz que no requiere un cálculo de rutas complejo (como A).
+- Lógica Detallada:
+  1.  Cuando el estado es CHASING, el sistema vuelve a calcular los deltas dx y dy.
+  2.  Compara el valor absoluto de dx y dy para decidir si priorizar el movimiento horizontal o vertical. Esto evita un movimiento puramente diagonal que puede parecer poco natural o quedarse atascado fácilmente.
+  3.  Si Math.abs(dx) > Math.abs(dy), el movimiento principal será horizontal. Si dx es positivo, el jugador está a la derecha, por lo que la dirección del enemigo se establece en "right". Si es negativo, se establece en "left".
+  4.  Si Math.abs(dy) es mayor, se aplica la misma lógica para la dirección vertical ("up" o "down").
+  5.  Perder el Rastro: Si en el estado CHASING, el cálculo de distancia revela que el jugador ha salido del radio de agresividad, el estado del enemigo vuelve a PATROLLING.
+
+- Código Ilustrativo en EnemigoSystem.java (dentro de update()):
+  java
+  if (enemigo.getAIState() == AIState.CHASING) {
+      // (dx y dy ya calculados para la detección)
+      if (Math.abs(dx) > Math.abs(dy)) {
+          if (dx > 0) {
+              enemigo.getTransform().setDirection("right");
+          } else {
+              enemigo.getTransform().setDirection("left");
+          }
+      } else {
+          if (dy > 0) {
+              enemigo.getTransform().setDirection("down");
+          } else {
+              enemigo.getTransform().setDirection("up");
+          }
+      }
+  }
+  
+
+---
+
+## Sección 5: Ejecución del Movimiento Físico
+
+Independientemente de si el enemigo está patrullando o persiguiendo, el resultado de la lógica de EnemigoSystem es siempre el mismo: una intención de movimiento (una dirección y un estado isMoving).
+
+- Proceso Unificado: A partir de aquí, el proceso es idéntico al del jugador.
+  1.  El MovimientoSystem recibe la entidad enemigo.
+  2.  Llama al ColisionSystem para comprobar si la dirección de movimiento actual está bloqueada por un tile sólido.
+  3.  Si ColisionSystem no reporta ninguna colisión, MovimientoSystem actualiza las coordenadas worldX y worldY del enemigo.
+
+Esta reutilización de los sistemas de movimiento y colisión para cualquier tipo de entidad es una de las mayores ventajas de una arquitectura bien separada por responsabilidades.

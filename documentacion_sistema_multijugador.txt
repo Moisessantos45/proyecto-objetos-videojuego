@@ -1,0 +1,1263 @@
+================================================================================
+        DOCUMENTACIÓN DEL SISTEMA MULTIJUGADOR CON ID ÚNICO
+================================================================================
+
+FECHA DE CREACIÓN: 3 de Noviembre, 2024
+VERSIÓN: 1.0
+ARQUITECTURA: MVC (Model-View-Controller)
+
+================================================================================
+1. INTRODUCCIÓN
+================================================================================
+
+Este documento explica la lógica completa del sistema multijugador implementado
+en el videojuego. El sistema permite a los usuarios crear servidores o unirse
+a servidores existentes mediante un ID único generado automáticamente.
+
+El enfoque elimina la necesidad de usuario/contraseña, simplificando el proceso
+de conexión mediante un código compartible de 9 caracteres (formato: XXXX-XXXX).
+
+================================================================================
+2. ARQUITECTURA DEL SISTEMA
+================================================================================
+
+2.1. COMPONENTES PRINCIPALES
+-----------------------------
+
+El sistema multijugador está distribuido en tres capas:
+
+┌─────────────────────────────────────────────────────────────────┐
+│                        PRESENTATION LAYER                        │
+│  - HUDRenderer.java: Renderiza las pantallas visuales           │
+│  - RenderSystem.java: Coordina todos los renderizadores         │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                         MAIN LAYER                               │
+│  - GamePanel.java: Controlador principal de estados             │
+│     Gestiona el flujo de pantallas                             │
+│     Maneja la entrada del usuario                              │
+│     Controla la lógica de servidor                             │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                      INFRASTRUCTURE LAYER                        │
+│  - InputService.java: Gestiona entradas del teclado             │
+└─────────────────────────────────────────────────────────────────┘
+
+2.2. ESTADOS DEL JUEGO
+----------------------
+
+Se agregaron 4 nuevos estados al enum GameState en GamePanel.java:
+
+    public enum GameState {
+        BIENVENIDA,              // Pantalla inicial
+        MENU_PRINCIPAL,          // Menú con opciones
+        JUGANDO,                 // Estado de juego activo
+        PAUSA,                   // Juego pausado
+        MENU_PAUSA,              // Menú de pausa
+        MODAL_COFRE,             // Modal de acertijos
+        MODAL_RESPUESTA_CORRECTA,
+        MODAL_RESPUESTA_INCORRECTA,
+        
+        // ===== NUEVOS ESTADOS MULTIJUGADOR =====
+        CREAR_SERVIDOR,          // Pantalla para crear servidor
+        SALA_ESPERA_HOST,        // Sala de espera del host
+        UNIRSE_SERVIDOR,         // Pantalla para unirse
+        SALA_ESPERA_CLIENTE      // Sala de espera del cliente
+    }
+
+================================================================================
+3. FLUJO DE FUNCIONAMIENTO
+================================================================================
+
+3.1. DIAGRAMA DE FLUJO GENERAL
+-------------------------------
+
+                        ┌─────────────────┐
+                        │ MENÚ PRINCIPAL  │
+                        └────────┬────────┘
+                                 │
+                    ┌────────────┼────────────┐
+                    │            │            │
+           1 Jugar Solo   2 Crear   3 Unirse
+                    │        Servidor      Servidor
+                    │            │            │
+                    v            v            v
+              ┌─────────┐  ┌──────────┐  ┌──────────┐
+              │ JUGANDO │  │  CREAR   │  │ UNIRSE   │
+              └─────────┘  │ SERVIDOR │  │ SERVIDOR │
+                           └────┬─────┘  └────┬─────┘
+                                │             │
+                         Genera ID único      │
+                                │             │
+                                v             │ Ingresa ID
+                        ┌───────────────┐    │
+                        │  SALA ESPERA  │    │
+                        │     HOST      │    │
+                        │               │    │
+                        │ - Muestra ID  │    │
+                        │ - C Copiar  │    │
+                        │ - Espera      │    │
+                        │   jugadores   │◄───┘
+                        └───────┬───────┘
+                                │
+                         ENTER Play
+                                │
+                                v
+                        ┌───────────────┐
+                        │    JUGANDO    │
+                        │  (Multijugador)│
+                        └───────────────┘
+
+3.2. FLUJO DETALLADO POR OPCIÓN
+--------------------------------
+
+A) CREAR SERVIDOR Opción 2
+-----------------------------
+
+Paso 1: Usuario selecciona opción 2 en menú principal
+    ↓
+Paso 2: GamePanel cambia estado a CREAR_SERVIDOR
+    - Código: estadoJuego = GameState.CREAR_SERVIDOR
+    - Método: resetearInputs() limpia variables
+    ↓
+Paso 3: Se renderiza pantalla informativa
+    - Muestra: "Se generará un ID único para tu servidor"
+    - Instrucciones para compartir el ID
+    ↓
+Paso 4: Usuario presiona ENTER
+    ↓
+Paso 5: Se ejecuta generación de ID
+    - Método: generarServerID()
+    - Genera código formato: XXXX-XXXX
+    - Ejemplo: "D27L-1RTV"
+    ↓
+Paso 6: Transición a SALA_ESPERA_HOST
+    - usuariosConectados = 1 (el host)
+    - Se muestra el ID generado en pantalla
+    ↓
+Paso 7: Host puede:
+    a) Presionar C para copiar ID al portapapeles
+    b) Presionar ENTER para iniciar partida
+    c) Presionar ESC para cancelar
+
+
+B) UNIRSE A SERVIDOR Opción 3
+--------------------------------
+
+Paso 1: Usuario selecciona opción 3 en menú principal
+    ↓
+Paso 2: GamePanel cambia estado a UNIRSE_SERVIDOR
+    - Código: estadoJuego = GameState.UNIRSE_SERVIDOR
+    - Método: resetearInputs() limpia variables
+    ↓
+Paso 3: Se renderiza pantalla de entrada
+    - Campo de texto editable
+    - Formato esperado: XXXX-XXXX
+    ↓
+Paso 4: Usuario ingresa caracteres
+    - Método: manejarInputTexto(KeyEvent e)
+    - Conversión automática a MAYÚSCULAS
+    - Límite: 12 caracteres
+    - Acepta: A-Z, 0-9, y guión (-)
+    ↓
+Paso 5: Validación en tiempo real
+    - Si inputServerID.length() >= 8:
+        * Botón ENTER se activa (color verde)
+    - Si inputServerID.length() < 8:
+        * Botón ENTER deshabilitado (color gris)
+    ↓
+Paso 6: Usuario presiona ENTER (si válido)
+    ↓
+Paso 7: Transición a SALA_ESPERA_CLIENTE
+    - usuariosConectados incrementa
+    - Muestra mensaje "Esperando al host..."
+    ↓
+Paso 8: Cliente espera hasta que host inicie
+    - Puede presionar ESC para desconectar
+
+================================================================================
+4. LÓGICA DE CÓDIGO DETALLADA
+================================================================================
+
+4.1. VARIABLES DE ESTADO (GamePanel.java)
+------------------------------------------
+
+    // Variables para gestión de servidor
+    private String serverID = "";              // ID del servidor creado
+    private String inputServerID = "";         // ID ingresado por usuario
+    private int usuariosConectados = 0;        // Contador de usuarios
+    private boolean mostrarMensajeCopiado = false; // Flag para mensaje
+    private long tiempoMensajeCopiado = 0;     // Timestamp del mensaje
+
+Propósito de cada variable:
+
+- serverID: Almacena el ID generado cuando se crea un servidor. Se mantiene
+  durante toda la sesión del host hasta que se cancele o inicie el juego.
+
+- inputServerID: Almacena temporalmente los caracteres que el usuario va
+  escribiendo cuando intenta unirse a un servidor. Se limpia al salir.
+
+- usuariosConectados: Contador que simula cuántos jugadores están en la sala.
+  Inicia en 1 cuando el host crea el servidor, incrementa cuando un cliente
+  se une.
+
+- mostrarMensajeCopiado: Booleano que activa la visualización del mensaje
+  "✓ ID copiado al portapapeles" por 2 segundos.
+
+- tiempoMensajeCopiado: Guarda el timestamp (System.currentTimeMillis()) del
+  momento en que se copió el ID, para calcular los 2 segundos de duración.
+
+4.2. GENERACIÓN DE ID ÚNICO
+----------------------------
+
+Método: generarServerID()
+Ubicación: GamePanel.java
+Retorno: String (formato XXXX-XXXX)
+
+    private String generarServerID() {
+        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder id = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+        
+        for (int i = 0; i < 8; i++) {
+            if (i == 4) {
+                id.append('-');  // Insertar guión en posición 4
+            }
+            id.append(caracteres.charAt(random.nextInt(caracteres.length())));
+        }
+        
+        return id.toString();
+    }
+
+LÓGICA PASO A PASO:
+
+1. Define un conjunto de 36 caracteres válidos (26 letras + 10 números)
+2. Crea un StringBuilder vacío para construir el ID
+3. Inicializa un generador de números aleatorios
+4. Itera 8 veces (más 1 guión = 9 caracteres totales):
+   - En la iteración 4 (posición 5), inserta un guión separador
+   - En cada iteración, selecciona aleatoriamente un carácter del conjunto
+   - Agrega el carácter al StringBuilder
+5. Convierte el StringBuilder a String y lo retorna
+
+EJEMPLO DE EJECUCIÓN:
+
+Iteración 0: Selecciona 'D' → id = "D"
+Iteración 1: Selecciona '2' → id = "D2"
+Iteración 2: Selecciona '7' → id = "D27"
+Iteración 3: Selecciona 'L' → id = "D27L"
+Iteración 4: Inserta '-' → id = "D27L-"
+Iteración 5: Selecciona '1' → id = "D27L-1"
+Iteración 6: Selecciona 'R' → id = "D27L-1R"
+Iteración 7: Selecciona 'T' → id = "D27L-1RT"
+Iteración 8: Selecciona 'V' → id = "D27L-1RTV"
+
+RESULTADO: "D27L-1RTV"
+
+PROBABILIDADES:
+- Combinaciones posibles: 36^8 = 2,821,109,907,456 (2.8 billones)
+- Probabilidad de colisión: Extremadamente baja para uso en juegos locales
+
+4.3. COPIAR AL PORTAPAPELES
+----------------------------
+
+Método: copiarAlPortapapeles(String texto)
+Ubicación: GamePanel.java
+Propósito: Copiar el ID del servidor al portapapeles del sistema
+
+    private void copiarAlPortapapeles(String texto) {
+        try {
+            // Crear objeto de selección de texto
+            java.awt.datatransfer.StringSelection stringSelection = 
+                new java.awt.datatransfer.StringSelection(texto);
+            
+            // Obtener portapapeles del sistema
+            java.awt.Toolkit.getDefaultToolkit()
+                .getSystemClipboard()
+                .setContents(stringSelection, null);
+                
+        } catch (Exception ex) {
+            System.err.println("Error al copiar: " + ex.getMessage());
+        }
+    }
+
+LÓGICA PASO A PASO:
+
+1. StringSelection: Envuelve el texto en un objeto Transferable que puede
+   ser copiado al portapapeles del sistema operativo.
+
+2. Toolkit.getDefaultToolkit(): Obtiene la instancia del toolkit de AWT que
+   proporciona acceso a funcionalidades del sistema operativo.
+
+3. getSystemClipboard(): Obtiene el portapapeles del sistema (el mismo que
+   usa Ctrl+C y Ctrl+V).
+
+4. setContents(): Coloca el StringSelection en el portapapeles, reemplazando
+   cualquier contenido anterior.
+
+5. Try-catch: Captura posibles excepciones (ej: permisos, sistema sin soporte).
+
+FLUJO DE EJECUCIÓN:
+
+Usuario presiona C en sala de espera
+    ↓
+InputService detecta tecla C
+    ↓
+GamePanel.actualizar() detecta inputService.isTeclaC()
+    ↓
+Llama a copiarAlPortapapeles(serverID)
+    ↓
+ID se copia al portapapeles del sistema
+    ↓
+mostrarMensajeCopiado = true
+    ↓
+tiempoMensajeCopiado = System.currentTimeMillis()
+    ↓
+En el siguiente frame de renderizado se muestra:
+"✓ ID copiado al portapapeles" (color verde)
+    ↓
+Después de 2000ms (2 segundos):
+mostrarMensajeCopiado = false
+    ↓
+Mensaje desaparece
+
+4.4. MANEJO DE ENTRADA DE TEXTO
+--------------------------------
+
+Método: manejarInputTexto(KeyEvent e)
+Ubicación: GamePanel.java
+Propósito: Capturar y procesar entrada de teclado para ID de servidor
+
+    private void manejarInputTexto(java.awt.event.KeyEvent e) {
+        // Solo procesar si estamos en pantalla UNIRSE_SERVIDOR
+        if (estadoJuego != GameState.UNIRSE_SERVIDOR) {
+            return;
+        }
+
+        char c = e.getKeyChar();  // Obtener carácter presionado
+        
+        // BACKSPACE: Borrar último carácter
+        if (c == '\b') {
+            if (inputServerID.length() > 0) {
+                inputServerID = inputServerID.substring(
+                    0, inputServerID.length() - 1
+                );
+            }
+        } 
+        // CARÁCTER ALFANUMÉRICO O GUIÓN
+        else if (Character.isLetterOrDigit(c) || c == '-') {
+            if (inputServerID.length() < 12) {
+                inputServerID += Character.toUpperCase(c);
+            }
+        }
+    }
+
+LÓGICA DETALLADA:
+
+1. GUARD CLAUSE (Cláusula de protección)
+   - Verifica que el estado sea UNIRSE_SERVIDOR
+   - Si no, retorna inmediatamente (no procesa nada)
+   - Previene que otros estados capturen entrada de texto
+
+2. OBTENER CARÁCTER
+   - KeyEvent.getKeyChar() retorna el carácter Unicode presionado
+   - Diferente de KeyEvent.getKeyCode() que retorna código de tecla
+
+3. PROCESAMIENTO DE BACKSPACE
+   - Carácter '\b' (backspace) tiene código ASCII 8
+   - Verifica que haya al menos 1 carácter en el string
+   - Usa substring para crear nuevo string sin el último carácter
+   - Ejemplo: "D27L-" → substring(0, 4) → "D27L"
+
+4. PROCESAMIENTO DE CARACTERES VÁLIDOS
+   - Character.isLetterOrDigit(c): Retorna true si es A-Z, a-z, 0-9
+   - También acepta explícitamente el carácter '-' (guión)
+   - Verifica límite de 12 caracteres (formato XXXX-XXXX + margen)
+   - Character.toUpperCase(c): Convierte a mayúsculas antes de agregar
+   - Concatena el carácter al string actual
+
+EJEMPLOS DE USO:
+
+Entrada: "d"
+  → Es letra → Convertir a "D" → inputServerID = "D"
+
+Entrada: "2"
+  → Es dígito → inputServerID = "D2"
+
+Entrada: "-"
+  → Es guión válido → inputServerID = "D2-"
+
+Entrada: "!"
+  → NO es alfanumérico ni guión → Se ignora
+
+Entrada: BACKSPACE con inputServerID = "D27"
+  → substring(0, 2) → inputServerID = "D2"
+
+4.5. ACTUALIZACIÓN DEL ESTADO (Método actualizar())
+----------------------------------------------------
+
+El método actualizar() en GamePanel.java se ejecuta en cada frame del juego
+(60 veces por segundo) y gestiona las transiciones de estado.
+
+CASO: CREAR_SERVIDOR
+---------------------
+
+    case CREAR_SERVIDOR:
+        if (inputService.isTeclaEnter()) {
+            serverID = generarServerID();          // Generar ID único
+            estadoJuego = GameState.SALA_ESPERA_HOST;  // Cambiar estado
+            usuariosConectados = 1;                // Inicializar contador
+            inputService.setTeclaEnter(false);     // Limpiar input
+        } else if (inputService.isTeclaEscape()) {
+            estadoJuego = GameState.MENU_PRINCIPAL;
+            inputService.setTeclaEscape(false);
+        }
+        break;
+
+FLUJO:
+1. Verifica constantemente si se presiona ENTER o ESC
+2. Si ENTER:
+   - Genera nuevo ID con generarServerID()
+   - Cambia a sala de espera del host
+   - Establece contador de usuarios en 1 (solo el host)
+   - Limpia el flag de ENTER para evitar múltiples triggers
+3. Si ESC:
+   - Vuelve al menú principal
+   - Limpia el flag de ESC
+
+CASO: SALA_ESPERA_HOST
+-----------------------
+
+    case SALA_ESPERA_HOST:
+        if (inputService.isTeclaEnter()) {
+            estadoJuego = GameState.JUGANDO;
+            inputService.setTeclaEnter(false);
+        } else if (inputService.isTeclaC()) {
+            copiarAlPortapapeles(serverID);        // Copiar ID
+            mostrarMensajeCopiado = true;          // Activar mensaje
+            tiempoMensajeCopiado = System.currentTimeMillis();
+            inputService.setTeclaC(false);
+        } else if (inputService.isTeclaEscape()) {
+            estadoJuego = GameState.MENU_PRINCIPAL;
+            inputService.setTeclaEscape(false);
+        }
+        
+        // Temporizador para ocultar mensaje de copiado
+        if (mostrarMensajeCopiado && 
+            (System.currentTimeMillis() - tiempoMensajeCopiado) > 2000) {
+            mostrarMensajeCopiado = false;
+        }
+        break;
+
+FLUJO:
+1. Verifica ENTER, C, o ESC
+2. Si ENTER:
+   - Inicia el juego (cambio a JUGANDO)
+   - En implementación real, iniciaría partida multijugador
+3. Si C:
+   - Copia el serverID al portapapeles
+   - Activa flag para mostrar mensaje de confirmación
+   - Guarda timestamp actual
+4. Si ESC:
+   - Cancela y vuelve al menú
+5. Temporizador de mensaje:
+   - Cada frame verifica si han pasado 2000ms (2 segundos)
+   - Si es así, desactiva el mensaje de confirmación
+
+CASO: UNIRSE_SERVIDOR
+----------------------
+
+    case UNIRSE_SERVIDOR:
+        if (inputService.isTeclaEnter() && !inputServerID.isEmpty()) {
+            estadoJuego = GameState.SALA_ESPERA_CLIENTE;
+            usuariosConectados = 2;  // Simulación
+            inputService.setTeclaEnter(false);
+        } else if (inputService.isTeclaEscape()) {
+            estadoJuego = GameState.MENU_PRINCIPAL;
+            inputService.setTeclaEscape(false);
+        }
+        break;
+
+FLUJO:
+1. Verifica ENTER y ESC
+2. Si ENTER:
+   - CONDICIÓN ADICIONAL: inputServerID NO debe estar vacío
+   - Esto previene conectar sin haber ingresado un ID
+   - Cambia a sala de espera del cliente
+   - Incrementa contador a 2 (simulación de conexión)
+3. Si ESC:
+   - Vuelve al menú principal
+
+CASO: SALA_ESPERA_CLIENTE
+--------------------------
+
+    case SALA_ESPERA_CLIENTE:
+        if (inputService.isTeclaEscape()) {
+            estadoJuego = GameState.MENU_PRINCIPAL;
+            inputService.setTeclaEscape(false);
+        }
+        break;
+
+FLUJO:
+1. Solo permite ESC para desconectar
+2. No hay botón de "iniciar" porque el cliente espera al host
+3. En implementación real, aquí esperaría mensaje del servidor
+
+================================================================================
+5. RENDERIZADO DE PANTALLAS
+================================================================================
+
+5.1. ARQUITECTURA DE RENDERIZADO
+---------------------------------
+
+El renderizado sigue la siguiente jerarquía:
+
+GamePanel.paintComponent(Graphics g)
+    ↓
+    ├── Determina estadoJuego actual
+    ↓
+RenderSystem.renderX(Graphics2D g2, parámetros...)
+    ↓
+HUDRenderer.renderX(Graphics2D g2, parámetros...)
+    ↓
+    └── Dibuja elementos visuales en pantalla
+
+5.2. RENDERIZADO: CREAR_SERVIDOR
+---------------------------------
+
+Método: HUDRenderer.renderCrearServidor()
+
+Elementos dibujados:
+
+1. FONDO SEMITRANSPARENTE
+   - Color: new Color(0, 0, 0, 150) → Negro con 150 de alpha (transparencia)
+   - Cubre toda la pantalla
+   - Da efecto de overlay sobre el juego
+
+2. TÍTULO
+   - Texto: "Crear Servidor"
+   - Fuente: fuenteTitulo (Arial Bold 18px)
+   - Color: Blanco
+   - Posición: Centrado horizontalmente, alto/2 - 100px
+
+3. MENSAJE INFORMATIVO 1
+   - Texto: "Se generará un ID único para tu servidor"
+   - Fuente: fuenteNormal (Arial 16px)
+   - Color: Cyan
+   - Posición: Centrado, alto/2
+
+4. MENSAJE INFORMATIVO 2
+   - Texto: "Compártelo con otros jugadores para que se unan"
+   - Color: Amarillo
+   - Posición: Centrado, alto/2 + 50px
+
+5. BOTÓN CREAR
+   - Texto: "ENTER Crear Servidor"
+   - Color: Verde
+   - Posición: Centrado, alto/2 + 120px
+
+6. INSTRUCCIONES
+   - Texto: "ESC para volver al menú"
+   - Fuente: fuentePequena (Arial 12px)
+   - Color: Gris claro
+   - Posición: Centrado, alto/2 + 150px
+
+5.3. RENDERIZADO: SALA_ESPERA_HOST
+-----------------------------------
+
+Método: HUDRenderer.renderSalaEsperaHost()
+Parámetros: usuariosConectados, serverID, mostrarMensajeCopiado
+
+Elementos dibujados:
+
+1. FONDO SEMITRANSPARENTE (igual que anterior)
+
+2. TÍTULO
+   - Texto: "Sala de Espera - HOST"
+   - Posición: alto/2 - 130px
+
+3. LABEL DEL ID
+   - Texto: "ID del Servidor:"
+   - Color: Amarillo
+   - Posición: alto/2 - 70px
+
+4. SERVER ID (DESTACADO)
+   - Texto: serverID (ej: "D27L-1RTV")
+   - Fuente: new Font("Monospaced", Font.BOLD, 24)
+   - Color: Cyan brillante
+   - Posición: Centrado, alto/2 - 40px
+   - Monoespaciado para mejor legibilidad del código
+
+5. BOTÓN COPIAR
+   - Texto: "C Copiar ID"
+   - Color: Naranja
+   - Posición: alto/2 - 30px
+
+6. MENSAJE DE CONFIRMACIÓN (condicional)
+   - Solo se dibuja si mostrarMensajeCopiado == true
+   - Texto: "✓ ID copiado al portapapeles"
+   - Color: Verde
+   - Fuente: fuentePequena
+   - Posición: alto/2 - 5px
+   - Duración: 2 segundos
+
+7. CONTADOR DE USUARIOS
+   - Texto: "Usuarios conectados: X"
+   - Color: Cyan
+   - Posición: alto/2 + 35px
+
+8. BOTÓN PLAY
+   - Texto: "ENTER Iniciar Partida"
+   - Color: Verde
+   - Posición: alto/2 + 85px
+
+9. BOTÓN CANCELAR
+   - Texto: "ESC Cancelar"
+   - Color: Rojo
+   - Posición: alto/2 + 115px
+
+5.4. RENDERIZADO: UNIRSE_SERVIDOR
+----------------------------------
+
+Método: HUDRenderer.renderUnirseServidor()
+Parámetros: serverID (texto ingresado por usuario)
+
+Elementos dibujados:
+
+1. FONDO SEMITRANSPARENTE
+
+2. TÍTULO
+   - Texto: "Unirse a Servidor"
+
+3. LABEL
+   - Texto: "Ingresa el ID del Servidor:"
+   - Color: Amarillo
+   - Posición: alto/2 - 30px
+
+4. CAMPO DE ENTRADA (INPUT BOX)
+   - Rectángulo: 280px de ancho x 35px de alto
+   - Fondo: Blanco
+   - Borde: Color(100, 100, 255) → Azul claro
+   - Posición: Centrado horizontalmente
+
+5. TEXTO DEL INPUT
+   - Fuente: new Font("Monospaced", Font.BOLD, 18)
+   - Color: Negro
+   - Texto: serverID + "|" → Cursor parpadeante
+   - Posición: Dentro del rectángulo, 10px de padding
+   - Monoespaciado para formato de código
+
+6. TEXTO INFORMATIVO
+   - Texto: "Formato: XXXX-XXXX (8 caracteres)"
+   - Color: Gris claro
+   - Fuente: fuentePequena
+
+7. BOTÓN CONECTAR (CONDICIONAL)
+   - Si serverID.length() >= 8:
+     * Color: Verde
+     * Texto: "ENTER Conectarse"
+     * Habilitado
+   - Si serverID.length() < 8:
+     * Color: Gris
+     * Texto: "ENTER Conectarse (ingresa un ID válido)"
+     * Deshabilitado visualmente
+
+8. INSTRUCCIONES
+   - Texto: "ESC para volver al menú"
+   - Color: Gris claro
+
+VALIDACIÓN VISUAL EN TIEMPO REAL:
+- A medida que el usuario escribe, el botón cambia de color
+- Verde = ID válido (puede conectar)
+- Gris = ID inválido (no puede conectar)
+
+5.5. RENDERIZADO: SALA_ESPERA_CLIENTE
+--------------------------------------
+
+Método: HUDRenderer.renderSalaEsperaCliente()
+Parámetros: usuariosConectados
+
+Elementos dibujados:
+
+1. FONDO SEMITRANSPARENTE
+
+2. TÍTULO
+   - Texto: "Esperando al Host..."
+   - Indica estado de espera pasivo
+
+3. CONTADOR DE USUARIOS
+   - Texto: "Usuarios conectados: X"
+   - Color: Cyan
+
+4. MENSAJE DE ESPERA
+   - Texto: "Esperando a que el host inicie la partida..."
+   - Color: Amarillo
+   - Fuente: fuentePequena
+
+5. BOTÓN DESCONECTAR
+   - Texto: "ESC Desconectar"
+   - Color: Rojo
+   - Única acción disponible para el cliente
+
+================================================================================
+6. GESTIÓN DE ENTRADA (InputService)
+================================================================================
+
+6.1. ESTRUCTURA DE InputService.java
+-------------------------------------
+
+InputService implementa KeyListener de Java AWT y gestiona todas las entradas
+del teclado del juego.
+
+Variables de estado para teclas multijugador:
+
+    private boolean teclaC;      // Para copiar ID
+    private boolean teclaEnter;  // Para confirmar acciones
+    private boolean teclaEscape; // Para cancelar/volver
+
+6.2. DETECCIÓN DE TECLAS
+-------------------------
+
+Método: keyPressed(KeyEvent e)
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_C:
+                teclaC = true;
+                break;
+            case KeyEvent.VK_ENTER:
+                teclaEnter = true;
+                break;
+            case KeyEvent.VK_ESCAPE:
+                teclaEscape = true;
+                break;
+            // ... otras teclas
+        }
+    }
+
+FLUJO:
+1. Java AWT llama automáticamente a keyPressed cuando se presiona una tecla
+2. El método recibe un KeyEvent con información de la tecla
+3. e.getKeyCode() retorna un código único para cada tecla
+4. Switch-case identifica la tecla y activa el flag correspondiente
+5. El flag permanece true hasta que se procese la acción
+
+6.3. LIBERACIÓN DE TECLAS
+--------------------------
+
+Método: keyReleased(KeyEvent e)
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_C:
+                teclaC = false;
+                break;
+            // ... otros casos
+        }
+    }
+
+FLUJO:
+1. Se llama cuando el usuario suelta la tecla
+2. Desactiva el flag correspondiente
+3. Previene que la acción se ejecute continuamente
+
+6.4. GETTERS Y SETTERS
+----------------------
+
+    public boolean isTeclaC() {
+        return teclaC;
+    }
+
+    public void setTeclaC(boolean estado) {
+        this.teclaC = estado;
+    }
+
+PROPÓSITO:
+- Getters: GamePanel lee el estado de las teclas
+- Setters: GamePanel limpia los flags después de procesar acciones
+
+PATRÓN DE USO:
+
+    // En GamePanel.actualizar()
+    if (inputService.isTeclaC()) {
+        // Procesar acción de copiar
+        copiarAlPortapapeles(serverID);
+        // Limpiar flag para evitar repetición
+        inputService.setTeclaC(false);
+    }
+
+================================================================================
+7. LISTENER PERSONALIZADO PARA TEXTO
+================================================================================
+
+7.1. IMPLEMENTACIÓN EN GamePanel
+---------------------------------
+
+En el método configurarPanel(), se agrega un KeyAdapter personalizado:
+
+    this.addKeyListener(new java.awt.event.KeyAdapter() {
+        @Override
+        public void keyTyped(java.awt.event.KeyEvent e) {
+            manejarInputTexto(e);
+        }
+    });
+
+DIFERENCIA ENTRE keyPressed vs keyTyped:
+
+- keyPressed: Se activa cuando se presiona una tecla física
+  * Detecta teclas de control (ENTER, ESC, flechas)
+  * Puede activarse repetidamente si se mantiene presionada
+
+- keyTyped: Se activa cuando se genera un carácter Unicode
+  * Detecta caracteres imprimibles (a, b, 1, 2, -)
+  * Considera el layout del teclado (útil para internacionalización)
+  * No se activa con teclas de control
+
+7.2. ¿POR QUÉ DOS LISTENERS?
+-----------------------------
+
+El juego necesita:
+
+1. InputService (keyPressed/keyReleased):
+   - Control del juego (movimiento, acciones)
+   - Teclas de navegación de menús (ENTER, ESC, números)
+   - Estado persistente de teclas (mantener presionado)
+
+2. KeyAdapter personalizado (keyTyped):
+   - Entrada de texto libre (escribir ID)
+   - Captura de caracteres individuales
+   - Procesamiento específico para campos de texto
+
+Ambos coexisten sin conflicto porque operan en contextos diferentes.
+
+================================================================================
+8. MÉTODO RESETEAR INPUTS
+================================================================================
+
+Método: resetearInputs()
+Ubicación: GamePanel.java
+Propósito: Limpiar todas las variables relacionadas con el servidor
+
+    private void resetearInputs() {
+        inputServerID = "";
+        serverID = "";
+        mostrarMensajeCopiado = false;
+    }
+
+CUÁNDO SE LLAMA:
+
+1. Al entrar a CREAR_SERVIDOR desde menú principal
+   - Limpia cualquier ID previo
+
+2. Al entrar a UNIRSE_SERVIDOR desde menú principal
+   - Limpia cualquier texto ingresado previamente
+
+3. Al cancelar con ESC (implícito en transiciones)
+
+IMPORTANCIA:
+- Previene que datos de sesiones anteriores persistan
+- Asegura estado limpio para nueva conexión
+- Evita bugs de estado inconsistente
+
+================================================================================
+9. SIMULACIÓN DE USUARIOS CONECTADOS
+================================================================================
+
+Actualmente, el contador de usuarios es una SIMULACIÓN para la interfaz.
+En la implementación real, este valor vendría de un servidor de red.
+
+LÓGICA ACTUAL:
+
+    // Al crear servidor
+    usuariosConectados = 1;  // Solo el host
+
+    // Al unirse a servidor
+    usuariosConectados = 2;  // Host + Cliente (simulado)
+
+IMPLEMENTACIÓN FUTURA (con networking):
+
+    // En el servidor
+    private List<Cliente> clientes = new ArrayList<>();
+
+    public void onClienteConectado(Cliente cliente) {
+        clientes.add(cliente);
+        usuariosConectados = clientes.size();
+        notificarATodos("Usuario conectado");
+    }
+
+    public void onClienteDesconectado(Cliente cliente) {
+        clientes.remove(cliente);
+        usuariosConectados = clientes.size();
+        notificarATodos("Usuario desconectado");
+    }
+
+================================================================================
+10. CASOS DE USO COMPLETOS
+================================================================================
+
+CASO DE USO 1: Host crea servidor y comparte ID
+------------------------------------------------
+
+1. Usuario inicia el juego
+2. Presiona 2 en menú principal
+3. Ve pantalla "Crear Servidor" con mensaje informativo
+4. Presiona ENTER
+5. Sistema genera ID aleatorio: "K9P2-X4TN"
+6. Usuario ve pantalla "Sala de Espera - HOST" con:
+   - ID del servidor: K9P2-X4TN (en grande)
+   - Botón C Copiar ID
+   - Usuarios conectados: 1
+   - Botón ENTER Iniciar Partida
+7. Usuario presiona C
+8. ID se copia al portapapeles
+9. Aparece mensaje verde: "✓ ID copiado al portapapeles"
+10. Mensaje desaparece después de 2 segundos
+11. Usuario comparte ID por Discord/WhatsApp/etc
+12. Usuario espera a que otros se unan
+13. Cuando está listo, presiona ENTER
+14. Juego inicia en modo multijugador
+
+CASO DE USO 2: Cliente se une a servidor
+-----------------------------------------
+
+1. Usuario recibe ID del host: "K9P2-X4TN"
+2. Inicia el juego
+3. Presiona 3 en menú principal
+4. Ve pantalla "Unirse a Servidor" con campo de texto
+5. Escribe: K9P2-X4TN
+   - Sistema convierte a mayúsculas automáticamente
+   - Muestra cursor parpadeante
+6. Al escribir 8 caracteres válidos:
+   - Botón ENTER se pone verde (habilitado)
+7. Usuario presiona ENTER
+8. Sistema valida que inputServerID no esté vacío
+9. Transición a "Sala de Espera - CLIENTE"
+10. Ve mensaje: "Esperando al Host..."
+11. Ve contador: "Usuarios conectados: 2"
+12. Espera hasta que el host inicie
+13. Cuando host presiona ENTER, todos entran al juego
+
+CASO DE USO 3: Usuario cancela creación de servidor
+----------------------------------------------------
+
+1. Usuario presiona 2 en menú principal
+2. Ve pantalla "Crear Servidor"
+3. Cambia de opinión y presiona ESC
+4. Vuelve al menú principal
+5. Todos los datos se limpian (resetearInputs())
+
+CASO DE USO 4: Usuario ingresa ID inválido
+-------------------------------------------
+
+1. Usuario presiona 3 en menú principal
+2. Escribe: "123" (menos de 8 caracteres)
+3. Botón ENTER permanece gris con texto:
+   "ENTER Conectarse (ingresa un ID válido)"
+4. Usuario presiona ENTER
+5. Nada sucede (validación: inputServerID.isEmpty())
+6. Usuario completa: "123-45678"
+7. Botón se pone verde
+8. Ahora puede presionar ENTER y continuar
+
+CASO DE USO 5: Cliente se desconecta de la sala
+------------------------------------------------
+
+1. Cliente está en "Sala de Espera - CLIENTE"
+2. Presiona ESC
+3. Vuelve al menú principal
+4. usuariosConectados disminuye (en implementación real)
+5. Puede volver a unirse o hacer otra cosa
+
+================================================================================
+11. ESTRUCTURA DE ARCHIVOS MODIFICADOS
+================================================================================
+
+ARCHIVOS MODIFICADOS:
+
+1. Main/GamePanel.java
+   - Agregados 4 nuevos estados al enum GameState
+   - Agregadas 5 variables de instancia para servidor
+   - Agregada lógica de actualización para 4 estados nuevos
+   - Agregada lógica de renderizado para 4 estados nuevos
+   - Agregado KeyAdapter para captura de texto
+   - Agregados 4 métodos nuevos:
+     * manejarInputTexto()
+     * resetearInputs()
+     * generarServerID()
+     * copiarAlPortapapeles()
+
+2. Presentation/RenderSystem.java
+   - Modificados 3 métodos de renderizado:
+     * renderCrearServidor()
+     * renderSalaEsperaHost()
+     * renderUnirseServidor()
+   - Sin cambios en renderSalaEsperaCliente()
+
+3. Presentation/HUDRenderer.java
+   - Agregados 4 métodos de renderizado:
+     * renderCrearServidor()
+     * renderSalaEsperaHost()
+     * renderUnirseServidor()
+     * renderSalaEsperaCliente()
+   - Total de líneas agregadas: ~165 líneas
+
+4. infrastructure/InputService.java
+   - Agregado 1 método setter:
+     * setTeclaC(boolean)
+   - Sin otros cambios (getters ya existían)
+
+TOTAL DE LÍNEAS AGREGADAS: ~350 líneas de código
+
+================================================================================
+12. VENTAJAS DEL SISTEMA DE ID ÚNICO
+================================================================================
+
+COMPARACIÓN: ID vs Usuario/Contraseña
+
+SISTEMA ANTERIOR (Usuario/Contraseña):
+---------------------------------------
+✗ Requiere dos campos de entrada
+✗ Usuario debe recordar ambos datos
+✗ Posibilidad de error al escribir
+✗ Necesita validación de formato de usuario
+✗ Necesita validación de seguridad de contraseña
+✗ Difícil de compartir verbalmente
+✗ Requiere base de datos de usuarios
+✗ Necesita sistema de autenticación
+
+SISTEMA ACTUAL (ID Único):
+---------------------------
+✓ Un solo campo de entrada
+✓ Usuario solo copia y pega el ID
+✓ Menos posibilidad de error
+✓ Validación simple (solo longitud)
+✓ No requiere gestión de contraseñas
+✓ Fácil de compartir (texto corto)
+✓ No requiere base de datos
+✓ No requiere autenticación compleja
+✓ Generación instantánea
+✓ Compatible con copiar/pegar
+✓ Formato amigable (XXXX-XXXX)
+
+CASOS DE USO IDEALES:
+- Juego casual entre amigos
+- Partidas rápidas sin registro
+- LAN parties (sin conexión a internet)
+- Sesiones temporales
+- Testing y desarrollo
+
+================================================================================
+13. MEJORAS FUTURAS SUGERIDAS
+================================================================================
+
+13.1. NETWORKING REAL
+----------------------
+
+Actualmente es una simulación visual. Para implementar networking real:
+
+1. Implementar servidor Socket:
+   - Usar java.net.ServerSocket en el host
+   - Escuchar en puerto específico (ej: 8080)
+   - Aceptar conexiones de clientes
+
+2. Implementar cliente Socket:
+   - Usar java.net.Socket para conectar
+   - Enviar ID del servidor
+   - Recibir confirmación de conexión
+
+3. Protocolo de comunicación:
+   - Mensajes JSON para intercambio de datos
+   - Sincronización de estado del juego
+   - Envío de posiciones de jugadores
+
+4. Mapeo ID → IP:Puerto:
+   - Servidor central que registra IDs
+   - O sistema P2P con descubrimiento local
+
+13.2. VALIDACIÓN DE ID EN SERVIDOR
+-----------------------------------
+
+Agregar verificación de que el ID existe:
+
+    private boolean validarIDServidor(String id) {
+        // Consultar servidor central
+        // Retornar true si el servidor existe y está activo
+    }
+
+13.3. LISTA DE USUARIOS CONECTADOS
+-----------------------------------
+
+En lugar de solo mostrar número, mostrar nombres:
+
+    - Usuario1 (Host)
+    - Usuario2
+    - Usuario3
+
+13.4. CHAT EN SALA DE ESPERA
+-----------------------------
+
+Permitir comunicación antes de iniciar:
+
+    Chat
+    Host: Listos?
+    Jugador2: Si!
+    Jugador3: Dale
+
+13.5. CONFIGURACIÓN DE PARTIDA
+-------------------------------
+
+Host puede configurar:
+- Número máximo de jugadores
+- Dificultad
+- Mapa inicial
+- Tiempo límite
+
+13.6. SISTEMA DE MATCHMAKING
+-----------------------------
+
+En lugar de IDs manuales:
+- Botón "Buscar partida"
+- Sistema automático que conecta jugadores
+- Basado en nivel, región, etc.
+
+13.7. PERSISTENCIA DE IDs
+--------------------------
+
+Guardar últimos IDs usados:
+- Historial de servidores
+- Favoritos
+- Reconexión rápida
+
+13.8. CÓDIGOS QR
+----------------
+
+Para facilitar compartir en local:
+- Generar QR del ID del servidor
+- Escanear con otro dispositivo
+- Unirse automáticamente
+
+13.9. DETECCIÓN DE ERRORES
+---------------------------
+
+Manejo robusto de:
+- ID no encontrado
+- Servidor lleno
+- Conexión perdida
+- Timeout de red
+
+13.10. INDICADOR DE LATENCIA
+-----------------------------
+
+Mostrar ping entre jugadores:
+- Verde: < 50ms
+- Amarillo: 50-100ms
+- Rojo: > 100ms
+
+================================================================================
+14. CONSIDERACIONES DE SEGURIDAD
+================================================================================
+
+NOTA: Este es un sistema básico para juegos casuales. Para producción seria:
+
+1. COLISIÓN DE IDs:
+   - Con 36^8 combinaciones, probabilidad de colisión es baja
+   - Para garantizar unicidad, consultar servidor central
+   - Registrar IDs activos en base de datos
+
+2. IDs PÚBLICOS:
+   - Cualquiera con el ID puede unirse
+   - No hay autenticación adicional
+   - Apropiado para sesiones entre amigos
+   - Para juegos públicos, agregar validación
+
+3. SPAM/FLOOD:
+   - Sin rate limiting en creación de servidores
+   - Implementar cooldown de creación
+   - Limitar intentos de conexión
+
+4. DATOS SENSIBLES:
+   - No enviar información personal en ID
+   - No usar para sistemas con datos privados
+
+5. MODIFICACIÓN DE CÓDIGO:
+   - Clientes pueden modificar su código
+   - Implementar validación del lado del servidor
+   - Usar checksums para integridad
+
+================================================================================
+15. TESTING Y DEBUGGING
+================================================================================
+
+15.1. PRUEBAS REALIZADAS
+-------------------------
+
+✓ Generación de ID único
+✓ Formato correcto (XXXX-XXXX)
+✓ Copiar al portapapeles
+✓ Entrada de texto con validación
+✓ Transiciones de estado
+✓ Renderizado de todas las pantallas
+✓ Compilación sin errores
+✓ Ejecución exitosa del juego
+
+15.2. COMANDOS DE TESTING
+--------------------------
+
+Compilar:
+    cd /home/moy45/Proyecto_Objetos/VideoJuego_v2
+    javac -d bin -cp "lib/" $(find . -name ".java")
+
+Ejecutar:
+    cd bin
+    java -cp ".:../lib/" Main.Main
+
+Test de generación de ID (standalone):
+    Ver código en sección 4.2
+
+15.3. DEBUGGING COMÚN
+----------------------
+
+Problema: ID no se copia
+Solución: Verificar permisos del portapapeles
+
+Problema: Texto no aparece al escribir
+Solución: Verificar que KeyAdapter esté agregado correctamente
+
+Problema: Botón ENTER no responde
+Solución: Verificar que inputService.setTeclaEnter(false) se llame
+
+Problema: Mensaje de copiado no desaparece
+Solución: Verificar lógica del temporizador en actualizar()
+
+================================================================================
+16. CONCLUSIÓN
+================================================================================
+
+Este sistema de multijugador con ID único proporciona una solución simple,
+intuitiva y efectiva para conectar jugadores sin la complejidad de sistemas
+de autenticación tradicionales.
+
+La arquitectura modular (MVC) permite fácil extensión del sistema con
+features adicionales como networking real, matchmaking, o chat.
+
+El código está diseñado para ser mantenible, con clara separación de
+responsabilidades entre capas de presentación, lógica y entrada.
+
+PRÓXIMOS PASOS RECOMENDADOS:
+1. Implementar networking real con Sockets
+2. Agregar sistema de chat en sala de espera
+3. Implementar sincronización de estado de juego
+4. Agregar manejo de desconexiones
+5. Crear protocolo de comunicación cliente-servidor
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
+
+Autor: Sistema de Desarrollo VideoJuego v2
+Última actualización: 3 de Noviembre, 2024
+Versión del documento: 1.0

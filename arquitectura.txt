@@ -1,0 +1,67 @@
+# Análisis de la Arquitectura del Videojuego
+
+Este documento describe la arquitectura del proyecto, basada en un patrón de "Arquitectura por Capas" (Layered Architecture). El objetivo de esta estructura es separar las responsabilidades del software en distintas partes lógicas, haciendo el código más organizado, mantenible y fácil de escalar.
+
+---
+
+## Descripción de las Capas (Carpetas)
+
+Cada carpeta principal de código (domain, model, Presentation, infrastructure) representa una capa con una responsabilidad única.
+
+### 1. model
+- Propósito: Contiene las estructuras de datos puras que representan las entidades del juego. Son los "sustantivos" o el "esqueleto" de la aplicación. No contienen lógica de juego compleja, solo estado.
+- Componentes Clave: EntidadModel.java, EnemigoModel.java, TileModel.java, Acertijo.java.
+- Ejemplo: Un objeto EnemigoModel almacena la vida, posición (a través de Transform), y velocidad de un enemigo, pero no sabe cómo moverse o atacar.
+
+### 2. domain
+- Propósito: Es el "cerebro" del juego. Contiene toda la lógica de negocio y las reglas que definen cómo funciona el juego. Esta capa opera sobre los objetos del model.
+- Componentes Clave: GameEngine.java, JugadorSystem.java, EnemigoSystem.java, ColisionSystem.java.
+- Ejemplo: EnemigoSystem toma un EnemigoModel, y basándose en la posición del jugador, actualiza su estado para que persiga al jugador. ColisionSystem detecta si dos EntidadModel se superponen y dispara un evento. El GameEngine orquesta todos estos sistemas.
+
+### 3. Presentation
+- Propósito: Es la capa responsable de todo lo visual. Su única función es tomar los datos del model y dibujarlos en la pantalla. No modifica el estado del juego.
+- Componentes Clave: RenderSystem.java, EnemigoRenderer.java, HUDRenderer.java.
+- Ejemplo: EnemigoRenderer recibe un EnemigoModel, lee su posición y el sprite actual, y lo dibuja en el GamePanel. HUDRenderer dibuja la vida del jugador y otros datos de la interfaz.
+
+### 4. infrastructure
+- Propósito: Actúa como el puente entre la aplicación y el mundo exterior. Se encarga de detalles técnicos como leer archivos, gestionar entradas del usuario o interactuar con hardware.
+- Componentes Clave: ResourceLoader.java, ConfigManager.java, InputService.java.
+- Ejemplo: ResourceLoader carga las imágenes de los sprites desde las carpetas spritesenemigos/ y tiles/. ConfigManager usa la librería JSON para leer y parsear el archivo data/data.json. InputService detecta las pulsaciones de teclas del usuario.
+
+### 5. Main
+- Propósito: Es el punto de entrada de la aplicación. Su responsabilidad es "ensamblar" todas las capas, crear las instancias iniciales (como la ventana del juego y el GameEngine) y poner en marcha el bucle principal del juego.
+- Componentes Clave: Main.java, GamePanel.java.
+
+### Carpetas de Soporte
+
+- lib/: No es una capa de la arquitectura, sino un repositorio para dependencias externas (bibliotecas de terceros). En este caso, json-20231013.jar es una herramienta que la capa de infrastructure utiliza.
+- data/, spritesenemigos/, tiles/, etc.: Son carpetas de recursos (assets). No contienen código, sino los datos e imágenes que la capa de infrastructure carga para que el resto de la aplicación los utilice.
+
+---
+
+## Flujo de Interacción entre Capas
+
+El flujo de datos y control sigue una dirección clara para mantener la separación de responsabilidades.
+
+Ciclo Típico del Juego (Game Loop):
+
+1.  Entrada de Usuario:
+    - El usuario presiona una tecla.
+    - ManejadorTeclas (Main) o InputService (infrastructure) captura este evento.
+
+2.  Procesamiento de Lógica:
+    - La información de la entrada se pasa al GameEngine (domain).
+    - El GameEngine instruye al sistema correspondiente, por ejemplo, JugadorSystem (domain).
+    - JugadorSystem actualiza los datos del JugadorModel (model), como cambiar su velocidad o dirección.
+
+3.  Actualización del Mundo:
+    - El GameEngine ejecuta otros sistemas como MovimientoSystem y EnemigoSystem (domain), que actualizan la posición de todos los modelos (model) correspondientes.
+    - ColisionSystem (domain) comprueba si hay colisiones entre los modelos actualizados y modifica su estado si es necesario (ej: reducir vida en EnemigoModel).
+
+4.  Renderizado (Dibujo en Pantalla):
+    - Una vez que todos los modelos han sido actualizados, el RenderSystem (Presentation) entra en acción.
+    - Recorre las entidades del juego (los model).
+    - Para cada entidad, utiliza un Renderer específico (como EnemigoRenderer) que sabe cómo dibujar ese model.
+    - El Renderer pide los sprites necesarios al ResourceLoader (infrastructure) y los dibuja en el GamePanel (Main).
+
+Este ciclo se repite decenas de veces por segundo, creando la ilusión de movimiento e interactividad. La ventaja de esta arquitectura es que si, por ejemplo, quieres cambiar cómo se renderizan los enemigos (usando un motor gráfico 3D en lugar de 2D), solo necesitarías modificar la capa de Presentation, sin tocar la lógica de domain o los model.

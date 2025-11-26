@@ -1,0 +1,542 @@
+# Documentación Corregida: Flujo de Pantallas y Menús
+
+Este documento describe en detalle el funcionamiento, código y lógica de las pantallas de interfaz, corrigiendo la versión anterior para reflejar el flujo real y las opciones específicas del juego.
+
+---
+
+## Sección 1: Pantalla de Bienvenida
+
+Es la primera pantalla que se muestra al ejecutar el juego. Su propósito es presentar el título y esperar a que el jugador continúe hacia el menú principal.
+
+### 1.1. Funcionamiento General
+
+El juego se inicia en un estado WELCOME. En este estado, la pantalla es estática y solo muestra un mensaje de bienvenida. El juego no procesa ninguna lógica de juego (movimiento, enemigos, etc.), solo espera una única entrada del teclado (ENTER) para cambiar al siguiente estado, que es el menú principal.
+
+### 1.2. Archivos y Código Involucrados
+
+- Main/GamePanel.java: Contiene el enum GameState que define este estado y la lógica para dibujarlo en paintComponent.
+- Main/ManejadorTeclas.java: Detecta la pulsación de ENTER para avanzar al siguiente estado.
+
+### 1.3. Lógica de Estado y Renderizado
+
+Se necesita un GameState más específico para diferenciar la bienvenida del menú.
+
+- Archivo: Main/GamePanel.java
+- Código de Estado (Corregido):
+  java
+  // Dentro de la clase GamePanel
+  public enum GameState {
+      WELCOME, // Nuevo estado para la pantalla de bienvenida
+      MENU,    // Estado para el menú de opciones
+      PLAY,
+      PAUSE
+  }
+  public GameState gameState;
+
+  // El constructor ahora inicia en el estado WELCOME
+  public GamePanel() {
+      // ...
+      this.gameState = GameState.WELCOME;
+  }
+
+  // El método paintComponent gestiona qué dibujar
+  @Override
+  public void paintComponent(Graphics g) {
+      super.paintComponent(g);
+      Graphics2D g2 = (Graphics2D) g;
+
+      if (gameState == GameState.WELCOME) {
+          drawWelcomeScreen(g2);
+      } else if (gameState == GameState.MENU) {
+          drawMenuScreen(g2);
+      } // ... etc.
+  }
+
+  // Método específico para dibujar la pantalla de bienvenida
+  public void drawWelcomeScreen(Graphics2D g2) {
+      g2.setColor(Color.BLACK);
+      g2.fillRect(0, 0, screenWidth, screenHeight);
+      g2.setFont(g2.getFont().deriveFont(Font.BOLD, 70F));
+      String text = "Bienvenido a la Aventura";
+      int x = getXforCenteredText(text, g2);
+      int y = screenHeight / 2 - (tileSize  2);
+      g2.setColor(Color.WHITE);
+      g2.drawString(text, x, y);
+
+      g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 40F));
+      text = "Presiona ENTER para continuar";
+      x = getXforCenteredText(text, g2);
+      y += tileSize  2;
+      g2.drawString(text, x, y);
+  }
+  
+
+### 1.4. Manejo de Teclas
+
+En este estado, solo se escucha la tecla ENTER.
+
+- Archivo: Main/ManejadorTeclas.java
+- Código de Manejo de Teclas:
+  java
+  // Dentro de keyPressed
+  if (gp.gameState == GameState.WELCOME) {
+      if (code == KeyEvent.VK_ENTER) {
+          gp.gameState = GameState.MENU; // Transición al menú principal
+      }
+  }
+  
+
+---
+
+## Sección 2: Pantalla de Menú Principal
+
+Esta pantalla aparece después de la bienvenida y es el centro de navegación principal antes de jugar.
+
+### 2.1. Funcionamiento General
+
+En el estado MENU, el jugador puede usar las teclas de arriba y abajo para seleccionar una opción y ENTER para confirmarla. Las opciones son "Nuevo Juego" y "Salir".
+
+### 2.2. Lógica de Renderizado
+
+El método drawMenuScreen (llamado desde paintComponent) se encarga de dibujar las opciones y un selector > que indica la opción activa, cuya posición depende de la variable commandNum.
+
+- Archivo: Main/GamePanel.java
+- Código de Renderizado: (Similar al de la versión anterior, pero llamado en el estado MENU)
+
+### 2.3. Manejo de Teclas y Opciones
+
+- Archivo: Main/ManejadorTeclas.java
+- Código de Manejo de Teclas:
+  java
+  // Dentro de keyPressed
+  else if (gp.gameState == GameState.MENU) {
+      if (code == KeyEvent.VK_W || code == KeyEvent.VK_UP) {
+          gp.commandNum--;
+          if (gp.commandNum < 0) { gp.commandNum = 1; }
+      }
+      if (code == KeyEvent.VK_S || code == KeyEvent.VK_DOWN) {
+          gp.commandNum++;
+          if (gp.commandNum > 1) { gp.commandNum = 0; }
+      }
+      if (code == KeyEvent.VK_ENTER) {
+          switch (gp.commandNum) {
+              case 0: // Opción "NUEVO JUEGO"
+                  gp.gameState = GameState.PLAY;
+                  // Opcional: llamar a un método gp.setupGame() para inicializar todo.
+                  break;
+              case 1: // Opción "SALIR"
+                  System.exit(0);
+                  break;
+          }
+      }
+  }
+  
+
+---
+
+## Sección 3: Pantalla de Pausa (Tecla ESC)
+
+Esta pantalla se activa al presionar ESC durante el juego (PLAY state), congelando la acción y mostrando un menú con varias opciones.
+
+### 3.1. Funcionamiento General
+
+Al cambiar al estado PAUSE, el bucle de actualización del juego se salta, pero el de renderizado continúa. Se dibuja el menú de pausa sobre la pantalla del juego congelada. El jugador navega por este menú de forma similar al menú principal.
+
+### 3.2. Lógica de Renderizado
+
+- Archivo: Main/GamePanel.java
+- Código de Renderizado:
+  java
+  // En paintComponent
+  else if (gameState == GameState.PAUSE) {
+      // Es importante que la lógica de renderizado del juego se ejecute
+      // para que la pantalla de pausa se muestre sobre el juego congelado.
+      // ... dibujar el juego ...
+      drawPauseScreen(g2); // Dibujar el menú de pausa encima
+  }
+
+  public void drawPauseScreen(Graphics2D g2) {
+      // Fondo semitransparente para oscurecer el juego
+      g2.setColor(new Color(0, 0, 0, 150));
+      g2.fillRect(0, 0, screenWidth, screenHeight);
+
+      g2.setFont(g2.getFont().deriveFont(Font.BOLD, 50F));
+      g2.setColor(Color.WHITE);
+
+      // Opciones del menú de pausa
+      String options = {"Reanudar", "Reiniciar", "Menú Principal", "Salir"};
+      int y = screenHeight / 2 - (tileSize  2);
+
+      for (int i = 0; i < options.length; i++) {
+          String text = optionsi;
+          int x = getXforCenteredText(text, g2);
+          g2.drawString(text, x, y + (i  tileSize  2));
+          if (commandNum == i) {
+              g2.drawString(">", x - tileSize, y + (i  tileSize  2));
+          }
+      }
+  }
+  
+
+### 3.3. Manejo de Teclas y Opciones
+
+- Archivo: Main/ManejadorTeclas.java
+- Código de Manejo de Teclas:
+  java
+  // Dentro de keyPressed
+  else if (gp.gameState == GameState.PAUSE) {
+      // Navegación
+      if (code == KeyEvent.VK_W || code == KeyEvent.VK_UP) {
+          gp.commandNum--;
+          if (gp.commandNum < 0) { gp.commandNum = 3; } // 4 opciones (0-3)
+      }
+      if (code == KeyEvent.VK_S || code == KeyEvent.VK_DOWN) {
+          gp.commandNum++;
+          if (gp.commandNum > 3) { gp.commandNum = 0; }
+      }
+      if (code == KeyEvent.VK_ENTER) {
+          switch (gp.commandNum) {
+              case 0: // Reanudar
+                  gp.gameState = GameState.PLAY;
+                  break;
+              case 1: // Reiniciar
+                  // Llamada al método de reinicio del GameEngine
+                  gp.getGameEngine().reiniciarJuego();
+                  gp.gameState = GameState.PLAY;
+                  break;
+              case 2: // Menú Principal
+                  gp.gameState = GameState.MENU;
+                  gp.commandNum = 0; // Resetea el cursor del menú principal
+                  break;
+              case 3: // Salir
+                  System.exit(0);
+                  break;
+          }
+      }
+      // También permitir salir de la pausa con ESC
+      if (code == KeyEvent.VK_ESCAPE) {
+          gp.gameState = GameState.PLAY;
+      }
+  }
+  
+
+---
+
+## Sección 4: Implementación Completa de la Función Reiniciar Juego
+
+Esta sección detalla la implementación completa de la funcionalidad de reiniciar el juego desde el menú de pausa, incluyendo el reinicio de todas las estadísticas del jugador y el estado del mundo.
+
+### 4.1. Funcionamiento General
+
+La opción "Reiniciar" (opción 2 en el menú de pausa) permite al jugador resetear completamente el juego a su estado inicial sin tener que cerrar y volver a abrir la aplicación. Esto incluye:
+- Reiniciar todas las estadísticas del jugador
+- Regenerar el mundo (chunks y tiles)
+- Limpiar y regenerar enemigos
+- Limpiar items consumibles
+- Resetear la posición de la cámara
+
+### 4.2. Arquitectura de la Solución
+
+La funcionalidad de reinicio se implementa siguiendo la arquitectura del juego:
+
+1. GamePanel.java (Main): Maneja el estado del menú de pausa y llama al método de reinicio
+2. GameEngine.java (Domain): Contiene la lógica central de reinicio
+3. JugadorSystem.java (Domain): Reinicia estadísticas específicas del jugador
+4. ManejadorMapaInfinito.java (Domain): Reinicia chunks y items del mapa
+
+### 4.3. Implementación en GamePanel
+
+#### Flujo de Control en el Menú de Pausa
+
+- Archivo: Main/GamePanel.java
+- Método: actualizar() en el case MENU_PAUSA
+
+java
+case MENU_PAUSA:
+    if (inputService.isTecla1()) {
+        // Reanudar juego
+        estadoJuego = GameState.JUGANDO;
+        inputService.setTecla1(false);
+    } else if (inputService.isTecla2()) {
+        //  REINICIAR JUEGO 
+        gameEngine.reiniciarJuego();
+        estadoJuego = GameState.JUGANDO;
+        inputService.setTecla2(false);
+    } else if (inputService.isTecla3()) {
+        // Volver al menú principal
+        estadoJuego = GameState.MENU_PRINCIPAL;
+        inputService.setTecla3(false);
+    } else if (inputService.isTeclaEscape()) {
+        // Volver al juego (reanudar)
+        estadoJuego = GameState.JUGANDO;
+        inputService.setTeclaEscape(false);
+    }
+    break;
+
+
+Nota: En esta implementación, el menú de pausa usa teclas numéricas (1, 2, 3) para seleccionar opciones directamente, en lugar de un cursor de navegación.
+
+### 4.4. Implementación del Método reiniciarJuego()
+
+#### Archivo: domain/GameEngine.java
+
+El método reiniciarJuego() es el corazón de la funcionalidad de reinicio. Se encarga de coordinar el reinicio de todos los sistemas del juego.
+
+java
+public void reiniciarJuego() {
+    // ========================================
+    // 1. REINICIAR ESTADÍSTICAS DEL JUGADOR
+    // ========================================
+    
+    // Vida máxima
+    jugadorSystem.getJugador().setVida(100);
+    
+    // Arsenal de pociones
+    jugadorSystem.setPocionesEnArsenal(0);
+    
+    // Acertijos resueltos
+    jugadorSystem.setAcertijosResueltos(0);
+    
+    // Cooldown de daño (evita daño inmediato después del reinicio)
+    jugadorSystem.reiniciarCooldownDanio();
+    
+    // ========================================
+    // 2. REINICIAR POSICIÓN DEL JUGADOR
+    // ========================================
+    
+    // Volver a la posición inicial del mundo
+    jugadorSystem.getMovimientoSystem().setMundoX(5000);
+    jugadorSystem.getMovimientoSystem().setMundoY(5000);
+    
+    // ========================================
+    // 3. REINICIAR ESTADOS DE MODALES Y COFRES
+    // ========================================
+    
+    // Cerrar todos los modales activos
+    modalCofreActivo = false;
+    modalRespuestaCorrectaActivo = false;
+    modalRespuestaIncorrectaActivo = false;
+    
+    // Resetear estados de cofres
+    cofreYaActivado = false;
+    cofreBloqueado = false;
+    acertijoActual = null;
+    cofreTileX = -1;
+    cofreTileY = -1;
+    
+    // ========================================
+    // 4. REINICIAR ENEMIGOS
+    // ========================================
+    
+    // Limpiar lista de enemigos existentes
+    enemigoSystem.getEnemigos().clear();
+    
+    // Generar nueva población de enemigos alrededor del jugador
+    enemigoSystem.generarEnemigosIniciales(
+        jugadorSystem.getMundoX(), 
+        jugadorSystem.getMundoY(), 
+        5  // Cantidad inicial de enemigos
+    );
+    
+    // ========================================
+    // 5. REINICIAR ITEMS CONSUMIBLES
+    // ========================================
+    
+    // Eliminar todos los items (pociones, venenos) del mapa
+    mapaInfinito.getItemsConsumibles().clear();
+    
+    // ========================================
+    // 6. REINICIAR CHUNKS DEL MAPA
+    // ========================================
+    
+    // Limpiar chunks cargados para forzar regeneración
+    mapaInfinito.reiniciarChunks();
+    
+    // ========================================
+    // 7. ACTUALIZAR CÁMARA Y GENERAR MUNDO
+    // ========================================
+    
+    // Centrar cámara en la nueva posición del jugador
+    camaraSystem.seguirEntidad(
+        jugadorSystem.getMundoX(), 
+        jugadorSystem.getMundoY()
+    );
+    
+    // Generar chunks alrededor de la posición inicial
+    if (mapaAdapter != null) {
+        mapaAdapter.actualizarChunksActivos(
+            jugadorSystem.getMundoX(), 
+            jugadorSystem.getMundoY()
+        );
+    } else if (mapaInfinito != null) {
+        mapaInfinito.actualizarChunksActivos(
+            jugadorSystem.getMundoX(), 
+            jugadorSystem.getMundoY()
+        );
+    }
+    
+    // ========================================
+    // 8. REACTIVAR EL JUEGO
+    // ========================================
+    
+    jugando = true;
+}
+
+
+### 4.5. Métodos Auxiliares Implementados
+
+#### 4.5.1. Método reiniciarCooldownDanio() en JugadorSystem
+
+Este método reinicia el temporizador que controla cuándo el jugador puede recibir daño nuevamente.
+
+- Archivo: domain/JugadorSystem.java
+
+java
+public void reiniciarCooldownDanio() {
+    this.ultimoTiempoDanio = 0;
+}
+
+
+Propósito: Evitar que el jugador reciba daño inmediatamente después de reiniciar si hay un enemigo cerca. El cooldown se resetea a 0, permitiendo un nuevo ciclo de daño desde el inicio.
+
+#### 4.5.2. Método reiniciarChunks() en ManejadorMapaInfinito
+
+Este método limpia todos los chunks del mapa y los items consumibles, forzando la regeneración del mundo.
+
+- Archivo: domain/ManejadorMapaInfinito.java
+
+java
+public void reiniciarChunks() {
+    // Limpiar HashMap de chunks activos
+    chunksActivos.clear();
+    
+    // Limpiar lista de items consumibles
+    itemsConsumibles.clear();
+}
+
+
+Propósito: 
+- chunksActivos.clear(): Elimina todos los chunks generados del HashMap. Cuando el jugador se mueva después del reinicio, los chunks se regenerarán proceduralmente con el seed del mundo.
+- itemsConsumibles.clear(): Elimina todas las pociones y venenos que el jugador no recogió. Nuevos items se generarán en los nuevos chunks.
+
+### 4.6. Flujo Completo de Ejecución
+
+
+1. Jugador presiona ESC durante el juego
+   ↓
+2. GamePanel cambia estado a MENU_PAUSA
+   ↓
+3. Se renderiza el menú con opciones:
+   1 Reanudar
+   2 Reiniciar  ← Opción de reinicio
+   3 Menú Principal
+   ESC Volver
+   ↓
+4. Jugador presiona tecla 2
+   ↓
+5. GamePanel llama a gameEngine.reiniciarJuego()
+   ↓
+6. GameEngine ejecuta secuencia de reinicio:
+   a. Reinicia estadísticas del jugador
+   b. Resetea posición del jugador
+   c. Cierra modales activos
+   d. Limpia y regenera enemigos
+   e. Limpia items del mapa
+   f. Reinicia chunks del mundo
+   g. Actualiza cámara
+   h. Genera nuevo entorno
+   ↓
+7. GamePanel cambia estado a JUGANDO
+   ↓
+8. El juego continúa desde el estado inicial
+
+
+### 4.7. Elementos que se Mantienen
+
+Algunos elementos del juego NO se reinician, manteniendo la continuidad de la sesión:
+
+- Seed del mundo: El mundo se regenera con el mismo seed, creando el mismo terreno
+- Configuración del juego: FPS, tamaño de tiles, dimensiones de pantalla
+- Teclas de control: Las configuraciones de InputService permanecen
+- Ventana del juego: La ventana JFrame no se cierra ni se recrea
+
+### 4.8. Elementos que SÍ se Reinician
+
+Lista completa de elementos que vuelven a su estado inicial:
+
+| Elemento | Valor Inicial | Ubicación |
+|----------|---------------|-----------|
+| Vida del jugador | 100 | JugadorSystem.jugador.vida |
+| Pociones en arsenal | 0 | JugadorSystem.pocionesEnArsenal |
+| Acertijos resueltos | 0 | JugadorSystem.acertijosResueltos |
+| Cooldown de daño | 0 | JugadorSystem.ultimoTiempoDanio |
+| Posición X del jugador | 5000 | MovimientoSystem.mundoX |
+| Posición Y del jugador | 5000 | MovimientoSystem.mundoY |
+| Lista de enemigos | Vacía → 5 nuevos | EnemigoSystem.enemigos |
+| Items consumibles | Vacía | MapaInfinito.itemsConsumibles |
+| Chunks del mapa | Vacío → Regenerados | MapaInfinito.chunksActivos |
+| Modal de cofre | false | GameEngine.modalCofreActivo |
+| Modal respuesta correcta | false | GameEngine.modalRespuestaCorrectaActivo |
+| Modal respuesta incorrecta | false | GameEngine.modalRespuestaIncorrectaActivo |
+| Acertijo actual | null | GameEngine.acertijoActual |
+| Estado de cofre activado | false | GameEngine.cofreYaActivado |
+| Estado de cofre bloqueado | false | GameEngine.cofreBloqueado |
+
+### 4.9. Consideraciones de Implementación
+
+#### 4.9.1. Orden de Reinicio
+
+El orden en que se reinician los componentes es importante:
+
+1. Primero: Estadísticas del jugador (no dependen de nada)
+2. Segundo: Posición del jugador (necesaria para regenerar enemigos)
+3. Tercero: Estados de UI (modales)
+4. Cuarto: Enemigos (necesitan posición del jugador)
+5. Quinto: Mapa e items (regeneración completa)
+6. Sexto: Cámara (necesita posición del jugador)
+7. Último: Reactivar el juego
+
+#### 4.9.2. Regeneración Procedural
+
+Gracias a que el mundo usa generación procedural con seed:
+- Los chunks se regenerarán con el mismo terreno
+- Los cofres aparecerán en las mismas posiciones
+- Los acertijos de los cofres se pueden resolver nuevamente
+- Los items se regenerarán en nuevas posiciones aleatorias
+
+#### 4.9.3. Prevención de Bugs
+
+La implementación incluye varias medidas para prevenir bugs:
+
+- Reseteo del cooldown: Evita daño instantáneo al reiniciar
+- Limpieza de enemigos antes de regenerar: Previene duplicados
+- Limpieza de chunks antes de actualizar: Fuerza regeneración completa
+- Cierre de modales: Evita que modales antiguos se muestren
+- Reseteo de flags de cofres: Permite reinteractuar con cofres
+
+### 4.10. Pruebas y Validación
+
+Para verificar que el reinicio funciona correctamente:
+
+1. ✅ Iniciar juego y recoger pociones
+2. ✅ Recibir daño de enemigos
+3. ✅ Resolver acertijos
+4. ✅ Presionar ESC y seleccionar Reiniciar
+5. ✅ Verificar que la vida vuelve a 100
+6. ✅ Verificar que las pociones vuelven a 0
+7. ✅ Verificar que los acertijos resueltos vuelven a 0
+8. ✅ Verificar que la posición del jugador es (5000, 5000)
+9. ✅ Verificar que hay nuevos enemigos
+10. ✅ Verificar que los cofres se pueden abrir nuevamente
+
+### 4.11. Posibles Extensiones Futuras
+
+Mejoras que se podrían implementar en el futuro:
+
+- Confirmación de reinicio: Pedir confirmación antes de reiniciar
+- Múltiples slots de guardado: Permitir reiniciar a diferentes estados
+- Reinicio parcial: Opción para mantener algunas estadísticas
+- Animación de transición: Efecto visual al reiniciar
+- Estadísticas persistentes: Guardar récords entre reinicios
+
+---

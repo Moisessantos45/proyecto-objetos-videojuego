@@ -1,0 +1,222 @@
+[
+  {
+    "id": 1,
+    "dificultad": "Fácil",
+    "pregunta": "¿Qué soy? Soy alto cuando soy joven, y soy bajo cuando soy viejo.",
+    "respuestas": [
+      { "inciso": "A", "texto": "Un árbol" },
+      { "inciso": "B", "texto": "Una vela" },
+      { "inciso": "C", "texto": "Una persona" }
+    ],
+    "respuesta_correcta": "B"
+  },
+  {
+    "id": 2,
+    "dificultad": "Fácil",
+    "pregunta": "¿Qué soy? Tengo ciudades, pero no casas; bosques, pero no árboles; y agua, pero no peces.",
+    "respuestas": [
+      { "inciso": "A", "texto": "Un libro" },
+      { "inciso": "B", "texto": "El cielo" },
+      { "inciso": "C", "texto": "Un mapa" }
+    ],
+    "respuesta_correcta": "C"
+  },
+  {
+    "id": 3,
+    "dificultad": "Medio",
+    "pregunta": "¿Qué soy? Una persona me mira a la cara, pero no soy yo. Me devuelve la imagen, pero no soy la imagen. Si me rompes, me dañarás.",
+    "respuestas": [
+      { "inciso": "A", "texto": "Un espejo" },
+      { "inciso": "B", "texto": "Una fotografía" },
+      { "inciso": "C", "texto": "Un jarrón" }
+    ],
+    "respuesta_correcta": "A"
+  },
+  {
+    "id": 4,
+    "dificultad": "Medio",
+    "pregunta": "¿Qué soy? Todo me come; todo me traga. El metal corroo, la piedra quebranto. A las aves mato, y a las fieras espanto. A los reyes derroto y a las cumbres levanto.",
+    "respuestas": [
+      { "inciso": "A", "texto": "El fuego" },
+      { "inciso": "B", "texto": "El agua" },
+      { "inciso": "C", "texto": "El tiempo" }
+    ],
+    "respuesta_correcta": "C"
+  },
+  {
+    "id": 5,
+    "dificultad": "Complejo",
+    "pregunta": "Si lo tengo, no lo comparto. Si lo comparto, ya no lo tengo. Aunque no pesa, nadie puede sostenerlo por mucho tiempo.",
+    "respuestas": [
+      { "inciso": "A", "texto": "Un secreto" },
+      { "inciso": "B", "texto": "Un sueño" },
+      { "inciso": "C", "texto": "Un juramento" }
+    ],
+    "respuesta_correcta": "B"
+  },
+  {
+    "id": 6,
+    "dificultad": "Complejo",
+    "pregunta": "Seis tengo, pero no de dinero. Dos doy, pero no de vida. De mi pasado, me avergüenzo. Solo con un soplo muero. Si me abres, verás el camino que te lleva al final. (Pista: fíjate bien en la ortografía de las palabras)",
+    "respuestas": [
+      { "inciso": "A", "texto": "El corazón" },
+      { "inciso": "B", "texto": "La palabra 'Silencio'" },
+      { "inciso": "C", "texto": "Un acertijo" }
+    ],
+    "respuesta_correcta": "B"
+  },
+  {
+    "id": 7,
+    "dificultad": "Fácil",
+    "pregunta": "¿Qué es aquello que entra al agua y no se moja, y entra al fuego y no se quema?",
+    "respuestas": [
+      { "inciso": "A", "texto": "La sombra" },
+      { "inciso": "B", "texto": "Una idea" },
+      { "inciso": "C", "texto": "La luz" }
+    ],
+    "respuesta_correcta": "C"
+  },
+  {
+    "id": 8,
+    "dificultad": "Fácil",
+    "pregunta": "Me quitas la piel y no lloro, pero tú sí lo harás. ¿Qué soy?",
+    "respuestas": [
+      { "inciso": "A", "texto": "Una cebolla" },
+      { "inciso": "B", "texto": "Una naranja" },
+      { "inciso": "C", "texto": "Un limón" }
+    ],
+    "respuesta_correcta": "A"
+  },
+  {
+    "id": 9,
+    "dificultad": "Fácil",
+    "pregunta": "Tengo cabeza y cola, pero no tengo cuerpo. ¿Qué soy?",
+    "respuestas": [
+      { "inciso": "A", "texto": "Un cometa" },
+      { "inciso": "B", "texto": "Una moneda" },
+      { "inciso": "C", "texto": "Una serpiente" }
+    ],
+    "respuesta_correcta": "B"
+  },
+  {
+    "id": 10,
+    "dificultad": "Fácil",
+    "pregunta": "Tengo hojas, pero no soy un árbol. Tengo lomo, pero no soy un animal. ¿Qué soy?",
+    "respuestas": [
+      { "inciso": "A", "texto": "Una cama" },
+      { "inciso": "B", "texto": "Una mesa" },
+      { "inciso": "C", "texto": "Un libro" }
+    ],
+    "respuesta_correcta": "C"
+  },
+  {
+    "id": 11,
+    "dificultad": "Fácil",
+    "pregunta": "Mientras más me miras, menos me ves. ¿Qué soy?",
+    "respuestas": [
+      { "inciso": "A", "texto": "Un fantasma" },
+      { "inciso": "B", "texto": "La oscuridad" },
+      { "inciso": "C", "texto": "El futuro" }
+    ],
+    "respuesta_correcta": "B"
+  },
+  {
+    "id": 12,
+    "dificultad": "Medio",
+    "pregunta": "Vuela sin alas, llora sin ojos. Pasa por tu cuerpo, pero no se siente. ¿Qué es?",
+    "respuestas": [
+      { "inciso": "A", "texto": "El viento" },
+      { "inciso": "B", "texto": "La nube" },
+      { "inciso": "C", "texto": "El pensamiento" }
+    ],
+    "respuesta_correcta": "B"
+  },
+  {
+    "id": 13,
+    "dificultad": "Medio",
+    "pregunta": "¿Qué se rompe tan pronto como se nombra?",
+    "respuestas": [
+      { "inciso": "A", "texto": "Un cristal" },
+      { "inciso": "B", "texto": "El silencio" },
+      { "inciso": "C", "texto": "Una promesa" }
+    ],
+    "respuesta_correcta": "B"
+  },
+  {
+    "id": 14,
+    "dificultad": "Medio",
+    "pregunta": "Nunca se puede agarrar ni tocar, pero sí se puede mirar. Cuando estoy, ya no hay nada que decir.",
+    "respuestas": [
+      { "inciso": "A", "texto": "El horizonte" },
+      { "inciso": "B", "texto": "Un espejismo" },
+      { "inciso": "C", "texto": "El tiempo" }
+    ],
+    "respuesta_correcta": "A"
+  },
+  {
+    "id": 15,
+    "dificultad": "Medio",
+    "pregunta": "Tiene llave, pero no abre puertas. Tiene espacio, pero no tiene habitaciones. Puedes entrar, pero nunca salir.",
+    "respuestas": [
+      { "inciso": "A", "texto": "Una prisión" },
+      { "inciso": "B", "texto": "Un laberinto" },
+      { "inciso": "C", "texto": "Un teclado de ordenador" }
+    ],
+    "respuesta_correcta": "C"
+  },
+  {
+    "id": 16,
+    "dificultad": "Medio",
+    "pregunta": "Si lo tengo, no lo comparto. Si lo comparto, ya no lo tengo. Aunque no pesa, nadie puede sostenerlo por mucho tiempo.",
+    "respuestas": [
+      { "inciso": "A", "texto": "Un secreto" },
+      { "inciso": "B", "texto": "Un sueño" },
+      { "inciso": "C", "texto": "Un juramento" }
+    ],
+    "respuesta_correcta": "B"
+  },
+  {
+    "id": 17,
+    "dificultad": "Difícil",
+    "pregunta": "Te lo dan, pero no lo usas. Te pertenece, pero otros lo usan más que tú.",
+    "respuestas": [
+      { "inciso": "A", "texto": "Un anillo" },
+      { "inciso": "B", "texto": "Tu nombre" },
+      { "inciso": "C", "texto": "Un coche" }
+    ],
+    "respuesta_correcta": "B"
+  },
+  {
+    "id": 18,
+    "dificultad": "Difícil",
+    "pregunta": "Dos madres y dos hijas se sentaron a comer huevos. Cada una se comió un huevo, pero solo se comieron tres huevos en total. ¿Cómo es posible?",
+    "respuestas": [
+      { "inciso": "A", "texto": "Estaban muy llenas" },
+      { "inciso": "B", "texto": "Una era vegetariana" },
+      { "inciso": "C", "texto": "Eran abuela, madre e hija" }
+    ],
+    "respuesta_correcta": "C"
+  },
+  {
+    "id": 19,
+    "dificultad": "Difícil",
+    "pregunta": "Estoy lleno de agujeros, pero sigo conteniendo agua. ¿Qué soy?",
+    "respuestas": [
+      { "inciso": "A", "texto": "Una red de pesca" },
+      { "inciso": "B", "texto": "Una esponja" },
+      { "inciso": "C", "texto": "Una botella rota" }
+    ],
+    "respuesta_correcta": "B"
+  },
+  {
+    "id": 20,
+    "dificultad": "Difícil",
+    "pregunta": "Si me tienes, quieres compartirme. Si me compartes, me habré ido.",
+    "respuestas": [
+      { "inciso": "A", "texto": "La felicidad" },
+      { "inciso": "B", "texto": "Un regalo" },
+      { "inciso": "C", "texto": "Un secreto" }
+    ],
+    "respuesta_correcta": "C"
+  }
+]

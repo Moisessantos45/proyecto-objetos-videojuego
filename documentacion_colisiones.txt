@@ -1,0 +1,144 @@
+# Documentación Detallada: Sistema de Colisiones
+
+Este documento describe el sistema de detección y gestión de colisiones. Se abordan las interacciones entre entidades (jugador, enemigos) y de estas con el entorno (tiles sólidos), detallando los algoritmos, archivos y lógicas implicadas.
+
+---
+
+## Sección 1: El Fundamento - Las "Hitboxes" o Áreas Sólidas
+
+Para que el sistema de colisiones funcione, cada entidad que participa en la física del mundo necesita una representación de su cuerpo físico. A esto comúnmente se le llama "hitbox".
+
+- Técnica: Se utiliza la clase java.awt.Rectangle como la forma geométrica para todas las hitboxes. Esta técnica se conoce como AABB (Axis-Aligned Bounding Box), ya que los rectángulos no rotan, lo que simplifica enormemente los cálculos de intersección.
+
+- Archivo Clave: model/Transform.java
+
+- Lógica Detallada:
+  1.  Dentro de la clase Transform, que cada entidad posee, se declara un objeto public Rectangle solidArea.
+  2.  Este rectángulo se inicializa con un tamaño específico (ej. 32x32 píxeles) que representa el "cuerpo" físico de la entidad, el cual puede ser más pequeño que su sprite visual.
+  3.  Crucialmente, el solidArea tiene un x e y que actúan como un desplazamiento (offset) desde la coordenada principal de la entidad. Esto permite ajustar la hitbox con precisión. Por ejemplo, si el sprite de un personaje es de 48x48, su hitbox puede ser de 32x32 y estar centrada, dejando 8 píxeles de "aire" en cada lado.
+  4.  Se guardan los valores de desplazamiento por defecto (solidAreaDefaultX, solidAreaDefaultY) para poder recalcular la posición absoluta de la hitbox en cada fotograma.
+
+- Código Ilustrativo en model/Transform.java:
+  java
+  import java.awt.Rectangle;
+
+  public class Transform {
+      public int x; // Coordenada mundial X de la esquina superior izquierda del sprite
+      public int y; // Coordenada mundial Y de la esquina superior izquierda del sprite
+      public Rectangle solidArea;
+      public int solidAreaDefaultX; // El desplazamiento X original de la hitbox
+      public int solidAreaDefaultY; // El desplazamiento Y original de la hitbox
+      public boolean collisionOn = false;
+
+      public Transform() {
+          // Ejemplo: una hitbox de 32x32 con un offset de 8px en X y 16px en Y
+          this.solidArea = new Rectangle(8, 16, 32, 32);
+          this.solidAreaDefaultX = this.solidArea.x;
+          this.solidAreaDefaultY = this.solidArea.y;
+      }
+  }
+  
+
+---
+
+## Sección 2: Colisión con el Entorno (Entidad vs. Tile Sólido)
+
+Esta es la colisión que impide que el jugador y los enemigos atraviesen muros, árboles y otros obstáculos del mapa.
+
+- Propósito: Bloquear el movimiento antes de que ocurra una superposición ilegal.
+- Archivo Clave: domain/ColisionSystem.java
+- Algoritmo: Comprobación Predictiva de Coordenadas de Tile
+  - Esta comprobación es predictiva, es decir, se realiza antes de que la posición de la entidad sea actualizada.
+  - Lógica Detallada:
+    1.  El método checkTile(EntidadModel entity) es invocado por el MovimientoSystem.
+    2.  Determina la dirección de movimiento de la entidad (up, down, left, right) a partir de su Transform.
+    3.  Calcula las coordenadas de los bordes de la hitbox en el siguiente fotograma. Por ejemplo, si la entidad se mueve hacia arriba:
+        - entityTopWorldY = entity.getTransform().y + entity.getTransform().solidArea.y - entity.getTransform().getSpeed();
+    4.  Convierte esta coordenada del mundo en una coordenada de la cuadrícula de tiles: tileRow = entityTopWorldY / TILE_SIZE.
+    5.  Identifica las columnas de tiles que la hitbox tocará: tileCol1 para el borde izquierdo y tileCol2 para el borde derecho.
+    6.  Obtiene los dos Tile del mapa en (tileCol1, tileRow) y (tileCol2, tileRow).
+    7.  Verifica la propiedad isSolid() de ambos tiles. Si cualquiera de los dos es true, significa que el movimiento resultaría en una colisión.
+    8.  En caso de colisión inminente, establece la bandera entity.getTransform().collisionOn = true;. El MovimientoSystem verá esta bandera y no actualizará la posición de la entidad.
+
+- Código Ilustrativo en domain/ColisionSystem.java:
+  java
+  public void checkTile(EntidadModel entity) {
+      // Coordenadas de los 4 bordes de la hitbox en el mundo
+      int entityLeftWorldX = entity.getTransform().x + entity.getTransform().solidArea.x;
+      // ... (right, top, bottom)
+
+      // Conversión a coordenadas de la cuadrícula de tiles
+      int entityLeftCol = entityLeftWorldX / TILE_SIZE;
+      // ... (right, top, bottom)
+
+      Tile tile1, tile2;
+
+      switch (entity.getTransform().getDirection()) {
+          case "up":
+              // Predecir la fila de tiles superior en el siguiente frame
+              int nextTopRow = (entityTopWorldY - entity.getTransform().getSpeed()) / TILE_SIZE;
+              tile1 = mapManager.getTile(entityLeftCol, nextTopRow);
+              tile2 = mapManager.getTile(entityRightCol, nextTopRow);
+              if (tile1.isSolid() || tile2.isSolid()) {
+                  entity.getTransform().collisionOn = true;
+              }
+              break;
+          // ... casos para "down", "left", "right"
+      }
+  }
+  
+
+---
+
+## Sección 3: Colisión entre Entidades (Jugador vs. Enemigo)
+
+Esta colisión gestiona las interacciones directas, como el daño en combate.
+
+- Propósito: Detectar la superposición de las hitboxes del jugador y los enemigos.
+- Archivos Clave: domain/ColisionSystem.java, domain/GameEngine.java (o donde se gestione el bucle principal).
+- Algoritmo: Intersección de Rectángulos AABB (Post-Movimiento)
+  - Esta comprobación es reactiva, se realiza después de que todas las entidades han finalizado su movimiento en el fotograma actual.
+  - Lógica Detallada:
+    1.  El bucle principal del juego invoca un método como checkEntityInteractions() en ColisionSystem.
+    2.  Este método itera sobre todos los enemigos activos.
+    3.  En cada iteración, primero debe actualizar la posición absoluta de las hitboxes tanto del jugador como del enemigo actual, ya que sus coordenadas x,y son relativas a la entidad.
+        - player.getSolidArea().x = player.getTransform().x + player.getTransform().solidAreaDefaultX;
+        - player.getSolidArea().y = player.getTransform().y + player.getTransform().solidAreaDefaultY;
+        - (Lo mismo para el enemigo)
+    4.  Se utiliza el método intersects() de la clase Rectangle, que es extremadamente eficiente: if (player.getSolidArea().intersects(enemy.getSolidArea())).
+    5.  Si intersects() devuelve true, se ha detectado una colisión. El sistema entonces ejecuta la lógica de juego apropiada, como aplicar daño al jugador.
+
+- Código Ilustrativo en domain/ColisionSystem.java:
+  java
+  public void checkPlayerVsEnemies(JugadorModel player, List<EnemigoModel> enemies) {
+      // Actualizar la posición de la hitbox del jugador una sola vez
+      player.getSolidArea().x = player.getTransform().x + player.getTransform().solidAreaDefaultX;
+      player.getSolidArea().y = player.getTransform().y + player.getTransform().solidAreaDefaultY;
+
+      for (EnemigoModel enemy : enemies) {
+          // Actualizar la posición de la hitbox del enemigo
+          enemy.getSolidArea().x = enemy.getTransform().x + enemy.getTransform().solidAreaDefaultX;
+          enemy.getSolidArea().y = enemy.getTransform().y + enemy.getTransform().solidAreaDefaultY;
+
+          if (player.getSolidArea().intersects(enemy.getSolidArea())) {
+              // --- ¡COLISIÓN DETECTADA! ---
+              // Aplicar la lógica de daño si el jugador no es invencible
+              if (!player.isInvincible()) {
+                  player.takeDamage(enemy.getAttackDamage());
+                  player.setInvincible(true); // Activar invencibilidad temporal
+              }
+          }
+      }
+  }
+  
+
+---
+
+## Sección 4: Flujo de Ejecución en el Bucle del Juego
+
+Para que todo funcione correctamente, el orden de las llamadas en el bucle principal es fundamental:
+
+1.  Actualización de Intenciones: Se ejecutan los update() de JugadorSystem y EnemigoSystem para determinar la dirección de movimiento deseada.
+2.  Actualización de Movimiento Físico: Se ejecuta el update() de MovimientoSystem para cada entidad. Dentro de este método, se llama a ColisionSystem.checkTile() (la comprobación predictiva) antes de cambiar las coordenadas.
+3.  Actualización de Interacciones: Una vez que todas las entidades están en su posición final para el fotograma, se llama a ColisionSystem.checkPlayerVsEnemies() (la comprobación reactiva).
+4.  Renderizado: Finalmente, RenderSystem dibuja todo en sus nuevas posiciones.
