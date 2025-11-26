@@ -153,6 +153,11 @@ public class GameEngine implements IUpdateable {
         }
         
         jugadorSystem.update();
+        
+        // Sincronizar vida en HUD cuando se usa poción
+        if (statsLocal != null) {
+            statsLocal.setVida((int) jugadorSystem.getJugador().getVida());
+        }
 
         int tileColision = jugadorSystem.getMovimientoSystem().getUltimaColision();
         if (tileColision == GeneradorMundo.TILE_COFRE) {
@@ -378,6 +383,10 @@ public class GameEngine implements IUpdateable {
                     enemigoX + margen, enemigoY + margen, anchoCuerpo, altoCuerpo)) {
                 
                 jugadorSystem.recibirDanio(enemigo.getDamage());
+                // Sincronizar vida con statsLocal
+                if (statsLocal != null) {
+                    statsLocal.setVida((int) jugadorSystem.getJugador().getVida());
+                }
             }
         }
     }
