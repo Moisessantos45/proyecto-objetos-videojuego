@@ -7,11 +7,13 @@ import domain.JugadorSystem;
 import domain.EnemigoSystem;
 import domain.MapaInfinitoAdapter;
 import model.EntidadModel;
+import model.PlayerStats;
 
 public class RenderSystem {
     private EntidadRenderer entidadRenderer;
     private EnemigoRenderer enemigoRenderer;
     private HUDRenderer hudRenderer;
+    private MultiplayerHUDRenderer multiplayerHUDRenderer;
     private int tamanioTile;
 
     public RenderSystem(int tamanioTile) {
@@ -19,6 +21,7 @@ public class RenderSystem {
         this.entidadRenderer = new EntidadRenderer(tamanioTile);
         this.enemigoRenderer = new EnemigoRenderer(tamanioTile);
         this.hudRenderer = new HUDRenderer();
+        this.multiplayerHUDRenderer = new MultiplayerHUDRenderer();
     }
 
     public void renderTodo(Graphics2D g2, 
@@ -115,6 +118,34 @@ public class RenderSystem {
 
     public HUDRenderer getHudRenderer() {
         return hudRenderer;
+    }
+
+    public MultiplayerHUDRenderer getMultiplayerHUDRenderer() {
+        return multiplayerHUDRenderer;
+    }
+    
+    public void renderMultiplayerHUD(Graphics2D g2,
+                                     PlayerStats statsLocal,
+                                     java.util.Map<String, domain.RemotePlayer> remotePlayers,
+                                     int pantallaAncho,
+                                     int pantallaAlto,
+                                     boolean mostrarRanking,
+                                     boolean mostrarDistancia) {
+        // Renderizar HUD del jugador local
+        multiplayerHUDRenderer.renderJugadorLocal(g2, statsLocal, pantallaAncho, pantallaAlto);
+        
+        // Renderizar HUDs de jugadores remotos
+        multiplayerHUDRenderer.renderJugadoresRemotos(g2, remotePlayers, pantallaAncho, pantallaAlto);
+        
+        // Renderizar ranking si está habilitado
+        if (mostrarRanking) {
+            multiplayerHUDRenderer.renderRanking(g2, statsLocal, remotePlayers, pantallaAncho, pantallaAlto);
+        }
+        
+        // Renderizar distancia a jugadores si está habilitada
+        if (mostrarDistancia) {
+            multiplayerHUDRenderer.renderDistanciaJugadores(g2, statsLocal, remotePlayers, pantallaAncho, pantallaAlto);
+        }
     }
     
     public void renderJuegoTerminado(Graphics2D g2, int pantallaAncho, int pantallaAlto, JugadorSystem jugadorSystem) {

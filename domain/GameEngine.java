@@ -5,6 +5,7 @@ import model.GameConfig;
 import model.EnemigoModel;
 import model.ConsumableItemModel;
 import model.Acertijo;
+import model.PlayerStats;
 import infrastructure.InputService;
 import infrastructure.AcertijosLoader;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class GameEngine implements IUpdateable {
     private Map<String, RemotePlayer> remotePlayers = new ConcurrentHashMap<>();
     private int lastX = -1, lastY = -1;
     private String lastDir = "";
+    private PlayerStats statsLocal; // Estadísticas del jugador local
     
     // Timer variables
     private static final long TIEMPO_LIMITE_MS = 3 * 60 * 1000; // 3 minutos en milisegundos
@@ -97,6 +99,9 @@ public class GameEngine implements IUpdateable {
             jugadorSystem.getMundoY(), 
             5
         );
+        
+        // Inicializar estadísticas del jugador local
+        this.statsLocal = new PlayerStats("local", "Jugador", 100);
         
         // NO inicializar timer aquí - se iniciará cuando comience la partida
         tiempoInicioJuego = 0;
@@ -474,6 +479,10 @@ public class GameEngine implements IUpdateable {
 
     public Map<String, RemotePlayer> getRemotePlayers() {
         return remotePlayers;
+    }
+
+    public PlayerStats getStatsLocal() {
+        return statsLocal;
     }
     
     public boolean isJuegoTerminado() {
