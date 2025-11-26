@@ -164,6 +164,12 @@ public class GameEngine implements IUpdateable {
             // System.out.println("DEBUG: Sincronizando vida: " + vidaActual);
         }
 
+        // Sincronizar acertijos resueltos en HUD local
+        if (statsLocal != null) {
+            int acertijosActuales = jugadorSystem.getAcertijosResueltos();
+            statsLocal.setAcertijosResueltos(acertijosActuales);
+        }
+
         int tileColision = jugadorSystem.getMovimientoSystem().getUltimaColision();
         if (tileColision == GeneradorMundo.TILE_COFRE) {
             if (!cofreYaActivado && !cofreBloqueado) {
