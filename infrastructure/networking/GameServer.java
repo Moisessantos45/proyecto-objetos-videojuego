@@ -20,15 +20,15 @@ public class GameServer {
         this.serverId = generateServerId();
     }
 
-    public void start() {
+    public void start() throws IOException {
+        // Iniciar el socket en el hilo principal para detectar errores de puerto inmediatamente
+        serverSocket = new ServerSocket(port, 50, InetAddress.getByName("0.0.0.0"));
+        running = true;
+        System.out.println("Servidor iniciado en puerto " + port + " con ID: " + serverId);
+        System.out.println("Escuchando en todas las interfaces (0.0.0.0)");
+        
         new Thread(() -> {
             try {
-                // Forzar la escucha en todas las interfaces de red (0.0.0.0)
-                serverSocket = new ServerSocket(port, 50, InetAddress.getByName("0.0.0.0"));
-                running = true;
-                System.out.println("Servidor iniciado en puerto " + port + " con ID: " + serverId);
-                System.out.println("Escuchando en IP: " + InetAddress.getLocalHost().getHostAddress());
-                
                 while (running) {
                     Socket socket = serverSocket.accept();
                     ClientHandler client = new ClientHandler(socket, this);
@@ -36,10 +36,10 @@ public class GameServer {
                         clients.add(client);
                     }
                     new Thread(client).start();
-                    System.out.println("Nuevo cliente conectado. Total: " + clients.size());
+                    System.out.println("Nuevo cliente conectado desde: " + socket.getInetAddress());
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                if (running) e.printStackTrace();
             }
         }).start();
     }

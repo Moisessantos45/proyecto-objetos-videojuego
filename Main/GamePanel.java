@@ -199,8 +199,10 @@ public class GamePanel extends JPanel implements Runnable {
                             server.start();
                             serverID = server.getServerId();
                         } catch (Exception e) {
+                            System.err.println("ERROR CRÍTICO AL INICIAR SERVIDOR: " + e.getMessage());
                             e.printStackTrace();
-                            serverID = "ERROR";
+                            serverID = "ERROR-PUERTO";
+                            server = null;
                         }
                     }
                     estadoJuego = GameState.SALA_ESPERA_HOST;
