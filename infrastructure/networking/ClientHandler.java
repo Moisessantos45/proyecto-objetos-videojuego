@@ -40,6 +40,11 @@ public class ClientHandler implements Runnable {
                     System.out.println("[SERVIDOR] Recibido VIDA de " + clientId + ": " + inputLine);
                     server.broadcastToAll(inputLine);
                 }
+                // Si es un mensaje de acertijos, retransmitir a TODOS
+                else if (inputLine.startsWith("ACERTIJOS:")) {
+                    System.out.println("[SERVIDOR] Recibido ACERTIJOS de " + clientId + ": " + inputLine);
+                    server.broadcastToAll(inputLine);
+                }
                 else {
                     // Para otros mensajes (START_GAME, MAP_SEED), excluir al remitente
                     server.broadcast(inputLine, this);

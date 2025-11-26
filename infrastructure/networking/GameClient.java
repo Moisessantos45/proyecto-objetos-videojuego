@@ -82,6 +82,12 @@ public class GameClient {
         }
     }
 
+    public void sendAcertijos(int acertijosResueltos) {
+        if (myId != null) {
+            sendMessage("ACERTIJOS:" + myId + ":" + acertijosResueltos);
+        }
+    }
+
     public String getMyId() {
         return myId;
     }

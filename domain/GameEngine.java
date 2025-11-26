@@ -39,6 +39,7 @@ public class GameEngine implements IUpdateable {
     private int lastX = -1, lastY = -1;
     private String lastDir = "";
     private int lastVidaSent = -1;  // Trackear última vida enviada para evitar envíos innecesarios
+    private int lastAcertijosCount = -1;  // Trackear últimos acertijos enviados para evitar envíos innecesarios
     private PlayerStats statsLocal; // Estadísticas del jugador local
     
     // Timer variables
@@ -480,6 +481,27 @@ public class GameEngine implements IUpdateable {
                         System.err.println("Error parseando vida: " + msg);
                     }
                 }
+            } else if (msg.startsWith("ACERTIJOS:")) {
+                // Formato: ACERTIJOS:id:acertijosResueltos
+                String[] parts = msg.split(":");
+                if (parts.length >= 3) {
+                    String id = parts[1];
+                    // Ignorar mis propios acertijos si llegaran a rebotar
+                    if (client.getMyId() != null && id.equals(client.getMyId())) {
+                        continue;
+                    }
+                    
+                    try {
+                        int acertijosResueltos = Integer.parseInt(parts[2]);
+                        
+                        RemotePlayer remotePlayer = remotePlayers.get(id);
+                        if (remotePlayer != null) {
+                            remotePlayer.getStats().setAcertijosResueltos(acertijosResueltos);
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("Error parseando acertijos: " + msg);
+                    }
+                }
             } else if (msg.startsWith("MAP_SEED:")) {
                 try {
                     long seed = Long.parseLong(msg.split(":")[1]);
@@ -513,6 +535,14 @@ public class GameEngine implements IUpdateable {
         if (currentVida != lastVidaSent) {
             client.sendVida(currentVida, vidaMaxima);
             lastVidaSent = currentVida;
+        }
+
+        // 4. Enviar mis acertijos resueltos si han cambiado
+        int currentAcertijos = jugadorSystem.getAcertijosResueltos();
+        
+        if (currentAcertijos != lastAcertijosCount) {
+            client.sendAcertijos(currentAcertijos);
+            lastAcertijosCount = currentAcertijos;
         }
     }
 
