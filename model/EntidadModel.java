@@ -44,4 +44,29 @@ public class EntidadModel {
     public void setEsJugador(boolean esJugador) {
         this.esJugador = esJugador;
     }
+
+    // Métodos delegados para facilitar el acceso
+    public int getMundoX() {
+        return transform.getX();
+    }
+
+    public void setMundoX(int x) {
+        transform.setX(x);
+    }
+
+    public int getMundoY() {
+        return transform.getY();
+    }
+
+    public void setMundoY(int y) {
+        transform.setY(y);
+    }
+
+    public String getDireccion() {
+        return spriteData.getDireccion();
+    }
+
+    public void setDireccion(String direccion) {
+        spriteData.setDireccion(direccion);
+    }
 }

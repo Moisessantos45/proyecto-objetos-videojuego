@@ -454,7 +454,6 @@ public class GameEngine implements IUpdateable {
     public Map<String, RemotePlayer> getRemotePlayers() {
         return remotePlayers;
     }
-}
     
     public boolean isJuegoTerminado() {
         return juegoTerminado;
