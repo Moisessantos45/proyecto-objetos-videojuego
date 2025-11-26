@@ -417,12 +417,16 @@ public class GameEngine implements IUpdateable {
         String msg;
         while ((msg = client.getNextMessage()) != null) {
             if (msg.startsWith("POS:")) {
+                System.out.println("[CLIENT] Recibido POS: " + msg);
                 // Formato: POS:id:x:y:dir
                 String[] parts = msg.split(":");
                 if (parts.length >= 5) {
                     String id = parts[1];
                     // Ignorar mi propia posición si llegara a rebotar
-                    if (client.getMyId() != null && id.equals(client.getMyId())) continue;
+                    if (client.getMyId() != null && id.equals(client.getMyId())) {
+                        System.out.println("[CLIENT] Ignorando mi propia posición: " + id);
+                        continue;
+                    }
                     
                     try {
                         int x = Integer.parseInt(parts[2]);
