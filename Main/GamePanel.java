@@ -228,6 +228,11 @@ public class GamePanel extends JPanel implements Runnable {
                     tiempoMensajeCopiado = System.currentTimeMillis();
                     inputService.setTeclaC(false);
                 } else if (inputService.isTeclaEscape()) {
+                    if (server != null) {
+                        server.stop();
+                        server = null;
+                        System.out.println("Servidor detenido y sala cerrada por el usuario.");
+                    }
                     estadoJuego = GameState.MENU_PRINCIPAL;
                     inputService.setTeclaEscape(false);
                 }
@@ -354,8 +359,8 @@ public class GamePanel extends JPanel implements Runnable {
             if (inputServerID.length() > 0) {
                 inputServerID = inputServerID.substring(0, inputServerID.length() - 1);
             }
-        } else if (Character.isLetterOrDigit(c) || c == '-') {
-            if (inputServerID.length() < 12) {
+        } else if (Character.isLetterOrDigit(c) || c == '-' || c == '.') {
+            if (inputServerID.length() < 20) {
                 inputServerID += Character.toUpperCase(c);
             }
         }
