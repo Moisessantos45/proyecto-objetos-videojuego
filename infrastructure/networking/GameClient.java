@@ -21,15 +21,17 @@ public class GameClient {
 
     public boolean connect() {
         try {
+            System.out.println("Intentando conectar a " + serverAddress + ":" + port + "...");
             socket = new Socket(serverAddress, port);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             connected = true;
+            System.out.println("Conexión exitosa a " + serverAddress);
             
             new Thread(this::listen).start();
             return true;
         } catch (IOException e) {
-            System.out.println("Error al conectar: " + e.getMessage());
+            System.out.println("Error al conectar a " + serverAddress + ":" + port + " -> " + e.getMessage());
             return false;
         }
     }

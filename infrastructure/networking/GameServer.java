@@ -1,6 +1,7 @@
 package infrastructure.networking;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -22,9 +23,11 @@ public class GameServer {
     public void start() {
         new Thread(() -> {
             try {
-                serverSocket = new ServerSocket(port);
+                // Forzar la escucha en todas las interfaces de red (0.0.0.0)
+                serverSocket = new ServerSocket(port, 50, InetAddress.getByName("0.0.0.0"));
                 running = true;
                 System.out.println("Servidor iniciado en puerto " + port + " con ID: " + serverId);
+                System.out.println("Escuchando en IP: " + InetAddress.getLocalHost().getHostAddress());
                 
                 while (running) {
                     Socket socket = serverSocket.accept();
