@@ -139,10 +139,8 @@ public class GamePanel extends JPanel implements Runnable {
                 } else {
                     gameEngine.update();
                     
-                    // Actualizar multijugador si hay cliente conectado
-                    if (client != null && client.isConnected()) {
-                        gameEngine.updateMultiplayer(client);
-                    }
+                    // Actualizar multijugador (siempre, incluso sin conexión)
+                    gameEngine.updateMultiplayer(client);
                     
                     // Verificar si el servidor fue cerrado o conexión perdida
                     if (client != null && !client.isConnected()) {

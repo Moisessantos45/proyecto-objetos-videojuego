@@ -430,119 +430,124 @@ public class GameEngine implements IUpdateable {
     }
 
     public void updateMultiplayer(GameClient client) {
-        if (client == null || !client.isConnected()) return;
-
-        // 1. Procesar mensajes recibidos
-        String msg;
-        while ((msg = client.getNextMessage()) != null) {
-            if (msg.startsWith("POS:")) {
-                System.out.println("[CLIENT] Recibido POS: " + msg);
-                // Formato: POS:id:x:y:dir
-                String[] parts = msg.split(":");
-                if (parts.length >= 5) {
-                    String id = parts[1];
-                    // Ignorar mi propia posición si llegara a rebotar
-                    if (client.getMyId() != null && id.equals(client.getMyId())) {
-                        System.out.println("[CLIENT] Ignorando mi propia posición: " + id);
-                        continue;
-                    }
-                    
-                    try {
-                        int x = Integer.parseInt(parts[2]);
-                        int y = Integer.parseInt(parts[3]);
-                        String dir = parts[4];
-                        
-                        remotePlayers.computeIfAbsent(id, k -> new RemotePlayer(k, x, y))
-                                     .updatePosition(x, y, dir);
-                    } catch (NumberFormatException e) {
-                        System.err.println("Error parseando posición: " + msg);
-                    }
-                }
-            } else if (msg.startsWith("VIDA:")) {
-                // Formato: VIDA:id:vida:vidaMaxima
-                String[] parts = msg.split(":");
-                if (parts.length >= 4) {
-                    String id = parts[1];
-                    // Ignorar mi propia vida si llegara a rebotar
-                    if (client.getMyId() != null && id.equals(client.getMyId())) {
-                        continue;
-                    }
-                    
-                    try {
-                        int vida = Integer.parseInt(parts[2]);
-                        int vidaMaxima = Integer.parseInt(parts[3]);
-                        
-                        RemotePlayer remotePlayer = remotePlayers.get(id);
-                        if (remotePlayer != null) {
-                            remotePlayer.getStats().setVida(vida);
-                            remotePlayer.getStats().setVidaMaxima(vidaMaxima);
+        if (client == null) return;
+        
+        // 1. Procesar mensajes recibidos (solo si conectado)
+        if (client.isConnected()) {
+            String msg;
+            while ((msg = client.getNextMessage()) != null) {
+                if (msg.startsWith("POS:")) {
+                    System.out.println("[CLIENT] Recibido POS: " + msg);
+                    // Formato: POS:id:x:y:dir
+                    String[] parts = msg.split(":");
+                    if (parts.length >= 5) {
+                        String id = parts[1];
+                        // Ignorar mi propia posición si llegara a rebotar
+                        if (client.getMyId() != null && id.equals(client.getMyId())) {
+                            System.out.println("[CLIENT] Ignorando mi propia posición: " + id);
+                            continue;
                         }
-                    } catch (NumberFormatException e) {
-                        System.err.println("Error parseando vida: " + msg);
-                    }
-                }
-            } else if (msg.startsWith("ACERTIJOS:")) {
-                // Formato: ACERTIJOS:id:acertijosResueltos
-                String[] parts = msg.split(":");
-                if (parts.length >= 3) {
-                    String id = parts[1];
-                    // Ignorar mis propios acertijos si llegaran a rebotar
-                    if (client.getMyId() != null && id.equals(client.getMyId())) {
-                        continue;
-                    }
-                    
-                    try {
-                        int acertijosResueltos = Integer.parseInt(parts[2]);
                         
-                        RemotePlayer remotePlayer = remotePlayers.get(id);
-                        if (remotePlayer != null) {
-                            remotePlayer.getStats().setAcertijosResueltos(acertijosResueltos);
+                        try {
+                            int x = Integer.parseInt(parts[2]);
+                            int y = Integer.parseInt(parts[3]);
+                            String dir = parts[4];
+                            
+                            remotePlayers.computeIfAbsent(id, k -> new RemotePlayer(k, x, y))
+                                         .updatePosition(x, y, dir);
+                        } catch (NumberFormatException e) {
+                            System.err.println("Error parseando posición: " + msg);
                         }
-                    } catch (NumberFormatException e) {
-                        System.err.println("Error parseando acertijos: " + msg);
                     }
+                } else if (msg.startsWith("VIDA:")) {
+                    // Formato: VIDA:id:vida:vidaMaxima
+                    String[] parts = msg.split(":");
+                    if (parts.length >= 4) {
+                        String id = parts[1];
+                        // Ignorar mi propia vida si llegara a rebotar
+                        if (client.getMyId() != null && id.equals(client.getMyId())) {
+                            continue;
+                        }
+                        
+                        try {
+                            int vida = Integer.parseInt(parts[2]);
+                            int vidaMaxima = Integer.parseInt(parts[3]);
+                            
+                            RemotePlayer remotePlayer = remotePlayers.get(id);
+                            if (remotePlayer != null) {
+                                remotePlayer.getStats().setVida(vida);
+                                remotePlayer.getStats().setVidaMaxima(vidaMaxima);
+                            }
+                        } catch (NumberFormatException e) {
+                            System.err.println("Error parseando vida: " + msg);
+                        }
+                    }
+                } else if (msg.startsWith("ACERTIJOS:")) {
+                    // Formato: ACERTIJOS:id:acertijosResueltos
+                    String[] parts = msg.split(":");
+                    if (parts.length >= 3) {
+                        String id = parts[1];
+                        // Ignorar mis propios acertijos si llegaran a rebotar
+                        if (client.getMyId() != null && id.equals(client.getMyId())) {
+                            continue;
+                        }
+                        
+                        try {
+                            int acertijosResueltos = Integer.parseInt(parts[2]);
+                            
+                            RemotePlayer remotePlayer = remotePlayers.get(id);
+                            if (remotePlayer != null) {
+                                remotePlayer.getStats().setAcertijosResueltos(acertijosResueltos);
+                            }
+                        } catch (NumberFormatException e) {
+                            System.err.println("Error parseando acertijos: " + msg);
+                        }
+                    }
+                } else if (msg.startsWith("MAP_SEED:")) {
+                    try {
+                        long seed = Long.parseLong(msg.split(":")[1]);
+                        reiniciarConSeed(seed);
+                    } catch (Exception e) {
+                        System.err.println("Error al procesar seed: " + e.getMessage());
+                    }
+                } else if (msg.equals("SERVIDOR_CERRADO")) {
+                    System.out.println("[CLIENTE] Servidor cerrado por el host");
+                    client.disconnect();
+                    juegoTerminado = true;
                 }
-            } else if (msg.startsWith("MAP_SEED:")) {
-                try {
-                    long seed = Long.parseLong(msg.split(":")[1]);
-                    reiniciarConSeed(seed);
-                } catch (Exception e) {
-                    System.err.println("Error al procesar seed: " + e.getMessage());
-                }
-            } else if (msg.equals("SERVIDOR_CERRADO")) {
-                System.out.println("[CLIENTE] Servidor cerrado por el host");
-                client.disconnect();
-                juegoTerminado = true;
             }
         }
 
-        // 2. Enviar mi posición si ha cambiado
-        int currentX = jugadorSystem.getMundoX();
-        int currentY = jugadorSystem.getMundoY();
-        String currentDir = jugadorSystem.getJugador().getDireccion();
+        // 2. Enviar cambios (siempre que esté conectado)
+        if (client.isConnected()) {
+            // Enviar posición si cambió
+            int currentX = jugadorSystem.getMundoX();
+            int currentY = jugadorSystem.getMundoY();
+            String currentDir = jugadorSystem.getJugador().getDireccion();
 
-        if (currentX != lastX || currentY != lastY || !currentDir.equals(lastDir)) {
-            client.sendPosition(currentX, currentY, currentDir);
-            lastX = currentX;
-            lastY = currentY;
-            lastDir = currentDir;
-        }
+            if (currentX != lastX || currentY != lastY || !currentDir.equals(lastDir)) {
+                client.sendPosition(currentX, currentY, currentDir);
+                lastX = currentX;
+                lastY = currentY;
+                lastDir = currentDir;
+            }
 
-        // 3. Enviar mi vida si ha cambiado
-        int currentVida = (int) jugadorSystem.getJugador().getVida();
-        int vidaMaxima = 100;  // Vida máxima del jugador
-        
-        if (currentVida != lastVidaSent) {
-            client.sendVida(currentVida, vidaMaxima);
-            lastVidaSent = currentVida;
-        }
+            // Enviar vida si cambió
+            int currentVida = (int) jugadorSystem.getJugador().getVida();
+            int vidaMaxima = 100;  // Vida máxima del jugador
+            
+            if (currentVida != lastVidaSent) {
+                client.sendVida(currentVida, vidaMaxima);
+                lastVidaSent = currentVida;
+            }
 
-        // 4. Enviar mis acertijos resueltos si han cambiado
-        int currentAcertijos = jugadorSystem.getAcertijosResueltos();
-        
-        if (currentAcertijos != lastAcertijosCount) {
-            client.sendAcertijos(currentAcertijos);
-            lastAcertijosCount = currentAcertijos;
+            // Enviar acertijos si cambiaron
+            int currentAcertijos = jugadorSystem.getAcertijosResueltos();
+            
+            if (currentAcertijos != lastAcertijosCount) {
+                client.sendAcertijos(currentAcertijos);
+                lastAcertijosCount = currentAcertijos;
+            }
         }
     }
 
