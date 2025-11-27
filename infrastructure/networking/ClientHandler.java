@@ -25,7 +25,7 @@ public class ClientHandler implements Runnable {
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            // Enviar ID al cliente al conectar
+            // Emitir mensaje de bienvenida con el ID del cliente
             sendMessage("WELCOME:" + clientId);
 
             String inputLine;

@@ -137,8 +137,6 @@ public class EnemigoSystem implements IUpdateable {
     
     @Override
     public void update() {
-        // Este método está aquí para cumplir con la interfaz IUpdateable.
-        // La lógica principal está en update(JugadorSystem).
     }
 
     public void update(JugadorSystem jugadorSystem) {
@@ -147,6 +145,12 @@ public class EnemigoSystem implements IUpdateable {
             actualizarEnemigo(enemigo, jugadorSystem);
         }
     }
+
+    /**
+     * Actualiza el estado de un enemigo, incluyendo su lógica de IA y animaciones.
+     * @param enemigo El enemigo a actualizar.
+     * @param jugadorSystem El sistema del jugador para obtener su posición.
+    */
 
     private void actualizarEnemigo(EnemigoModel enemigo, JugadorSystem jugadorSystem) {
         // 1. Calcular distancia al jugador
@@ -171,7 +175,6 @@ public class EnemigoSystem implements IUpdateable {
             patrullar(enemigo, jugadorSystem);
         }
 
-        // 4. Actualizar animación
         actualizarAnimacion(enemigo);
     }
 

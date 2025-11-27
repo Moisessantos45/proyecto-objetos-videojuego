@@ -12,7 +12,7 @@ public class ColisionSystem {
     public ColisionSystem(ManejadorMapaInfinito mapaInfinito, int tamanioTile) {
         this.mapaInfinito = mapaInfinito;
         this.mapaAdapter = null;
-        this.enemigoSystem = null; // Sin colisión de enemigos
+        this.enemigoSystem = null;
         this.tamanioTile = tamanioTile;
     }
 
@@ -79,7 +79,7 @@ public class ColisionSystem {
                 break;
         }
 
-        return -1; // No hay colisión
+        return -1;
     }
 
     public static boolean verificarColisionEntidades(int x1, int y1, int ancho1, int alto1,

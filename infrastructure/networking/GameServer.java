@@ -20,8 +20,12 @@ public class GameServer {
         this.serverId = generateServerId();
     }
 
+    /**
+     * Inicia el servidor y comienza a aceptar conexiones de clientes.
+     * @throws IOException si ocurre un error al iniciar el servidor.
+     */
+
     public void start() throws IOException {
-        // Iniciar el socket en el hilo principal para detectar errores de puerto inmediatamente
         serverSocket = new ServerSocket(port, 50, InetAddress.getByName("0.0.0.0"));
         running = true;
         System.out.println("Servidor iniciado en puerto " + port + " con ID: " + serverId);
@@ -47,7 +51,6 @@ public class GameServer {
 
     public void stop() {
         running = false;
-        // Notificar a todos los clientes que el servidor se cierra
         broadcast("SERVIDOR_CERRADO", null);
         try {
             if (serverSocket != null) serverSocket.close();
@@ -59,8 +62,6 @@ public class GameServer {
     public void broadcast(String message, ClientHandler sender) {
         synchronized (clients) {
             for (ClientHandler client : clients) {
-                // No enviar al remitente si es un mensaje de actualización de estado
-                // Pero sí enviar si sender es null (mensaje del sistema)
                 if (sender == null || client != sender) { 
                     client.sendMessage(message);
                 }
@@ -92,7 +93,6 @@ public class GameServer {
     }
 
     private String generateServerId() {
-        // Genera un ID simple tipo XXXX-XXXX
         String uuid = UUID.randomUUID().toString().toUpperCase();
         return uuid.substring(0, 4) + "-" + uuid.substring(4, 8);
     }

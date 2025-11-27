@@ -1,46 +1,46 @@
-# 🔧 Corrección: Volver al Menú Principal
+CORRECCION MENU PRINCIPAL Y DOCUMENTACION GENERAL
 
-## ❌ Problema Identificado
+SECCION 1: CORRECCION DEL MENU PRINCIPAL
 
-Cuando el jugador estaba en el Menú de Pausa o en la pantalla de Juego Terminado y seleccionaba la opción para volver al Menú Principal, el juego NO se reiniciaba.
+Problema Identificado
+
+Cuando el jugador estaba en el Menu de Pausa o en la pantalla de Juego Terminado y seleccionaba la opcion para volver al Menu Principal, el juego NO se reiniciaba.
 
 Esto causaba que:
-- Si el jugador volvía a jugar, continuaba con el estado anterior
-- El timer seguía desde donde se quedó
-- Los enemigos, items y el mapa seguían en el mismo estado
-- El jugador podía "explotar" esto para evitar perder
+. Si el jugador volvía a jugar, continuaba con el estado anterior
+. El timer seguía desde donde se quedó
+. Los enemigos, items y el mapa seguían en el mismo estado
+. El jugador podía explotar esto para evitar perder
 
-## ✅ Solución Implementada
+Solucion Implementada
 
 Ahora, siempre que el jugador vuelve al Menú Principal, el juego se reinicia automáticamente para asegurar que la próxima partida comience desde cero.
 
-### Cambios Realizados
+Cambios Realizados
 
-#### 1. Menú de Pausa → Menú Principal
+1. Menú de Pausa a Menú Principal
 
 ANTES:
-java
-} else if (inputService.isTecla3()) {
-    estadoJuego = GameState.MENU_PRINCIPAL;  // ← Solo cambia estado
-    inputService.setTecla3(false);
-}
 
-
-AHORA:
-java
 } else if (inputService.isTecla3()) {
-    gameEngine.reiniciarJuego();  // ← REINICIA EL JUEGO
     estadoJuego = GameState.MENU_PRINCIPAL;
     inputService.setTecla3(false);
 }
 
+AHORA:
 
-#### 2. Juego Terminado → Menú Principal
+} else if (inputService.isTecla3()) {
+    gameEngine.reiniciarJuego();
+    estadoJuego = GameState.MENU_PRINCIPAL;
+    inputService.setTecla3(false);
+}
+
+2. Juego Terminado a Menú Principal
 
 ANTES:
-java
+
 } else if (inputService.isTeclaEscape()) {
-    estadoJuego = GameState.MENU_PRINCIPAL;  // ← Solo cambia estado
+    estadoJuego = GameState.MENU_PRINCIPAL;
     inputService.setTeclaEscape(false);
 }
 

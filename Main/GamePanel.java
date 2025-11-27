@@ -302,11 +302,7 @@ public class GamePanel extends JPanel implements Runnable {
                 }
                 break;
             case SALA_ESPERA_CLIENTE:
-                if (client != null) {
-                    // En la sala de espera NO llamamos a updateMultiplayer porque consumiría
-                    // los mensajes de configuración (SEED, START) sin procesarlos correctamente.
-                    // Procesamos manualmente la cola aquí.
-                    
+                if (client != null) {                    
                     String msg;
                     while ((msg = client.getNextMessage()) != null) {
                         if (msg.startsWith("MAP_SEED:")) {
@@ -404,8 +400,8 @@ public class GamePanel extends JPanel implements Runnable {
                     gameEngine.getRemotePlayers(),
                     config.getAnchoPantalla(),
                     config.getAltoPantalla(),
-                    (client != null && client.isConnected()),  // mostrar ranking solo si hay conexión
-                    (client != null && client.isConnected())   // mostrar distancia solo si hay conexión
+                    (client != null && client.isConnected()),
+                    (client != null && client.isConnected()) 
                 );
 
                 if (estadoJuego == GameState.PAUSA) {

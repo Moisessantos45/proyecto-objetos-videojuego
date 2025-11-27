@@ -56,7 +56,6 @@ public class GameClient {
                     myId = message.split(":")[1];
                     System.out.println("Mi ID asignado es: " + myId);
                 } else {
-                    // Solo imprimir mensajes que no sean de posición para no saturar la consola
                     if (!message.startsWith("POS:")) {
                         System.out.println("Mensaje del servidor: " + message);
                     }

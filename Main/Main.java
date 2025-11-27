@@ -12,10 +12,6 @@ import infrastructure.ConfigManager;
 import infrastructure.InputService;
 import model.GameConfig;
 
-/**
- * Ejemplo de uso de la nueva arquitectura por capas
- * Este Main muestra cómo usar los nuevos componentes
- */
 public class Main {
 
     public static void main(String[] args) {

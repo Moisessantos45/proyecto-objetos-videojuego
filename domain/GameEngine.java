@@ -39,13 +39,13 @@ public class GameEngine implements IUpdateable {
     private Map<String, RemotePlayer> remotePlayers = new ConcurrentHashMap<>();
     private int lastX = -1, lastY = -1;
     private String lastDir = "";
-    private int lastVidaSent = -1;  // Trackear última vida enviada para evitar envíos innecesarios
-    private int lastAcertijosCount = -1;  // Trackear últimos acertijos enviados para evitar envíos innecesarios
-    private Map<String, Boolean> cofresCerradosEnviados = new ConcurrentHashMap<>();  // Trackear cofres cerrados ya enviados
-    private PlayerStats statsLocal; // Estadísticas del jugador local
+    private int lastVidaSent = -1;
+    private int lastAcertijosCount = -1;
+    private Map<String, Boolean> cofresCerradosEnviados = new ConcurrentHashMap<>();
+    private PlayerStats statsLocal;
     
     // Timer variables
-    private static final long TIEMPO_LIMITE_MS = 3 * 60 * 1000; // 3 minutos en milisegundos
+    private static final long TIEMPO_LIMITE_MS = 3 * 60 * 1000;
     private long tiempoInicioJuego;
     private long tiempoTranscurrido;
     private boolean juegoTerminado;
@@ -107,7 +107,7 @@ public class GameEngine implements IUpdateable {
         // Inicializar estadísticas del jugador local
         this.statsLocal = new PlayerStats("local", "Jugador", 100);
         
-        // NO inicializar timer aquí - se iniciará cuando comience la partida
+        // Nota no se debe inicializar los timers aquí
         tiempoInicioJuego = 0;
         tiempoTranscurrido = 0;
         juegoTerminado = false;
@@ -162,8 +162,6 @@ public class GameEngine implements IUpdateable {
         if (statsLocal != null) {
             int vidaActual = (int) jugadorSystem.getJugador().getVida();
             statsLocal.setVida(vidaActual);
-            // DEBUG: Descomentar para ver sincronización en tiempo real
-            // System.out.println("DEBUG: Sincronizando vida: " + vidaActual);
         }
 
         // Sincronizar acertijos resueltos en HUD local
