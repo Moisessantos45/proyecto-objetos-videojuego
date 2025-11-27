@@ -1,11 +1,10 @@
-+.txt
-*.md
-+.txt
-*.md
-*.bat
 *.class
 *.jar
 *.log
 *.sh
 sources.txt
 bin/
+VideoJuego/app/
+VideoJuego/runtime/
+VideoJuego/
+VideoJuego.jar

@@ -39,78 +39,56 @@ public class ManejadorMapaInfinito {
         cargarTilesVisuales();
 
         System.out.println(
-            "Sistema de mapa infinito inicializado con seed: " + seed
-        );
+                "Sistema de mapa infinito inicializado con seed: " + seed);
     }
 
     private void cargarTilesVisuales() {
         tiles = new Tile[11];
+        infrastructure.ResourceLoader loader = infrastructure.ResourceLoader.getInstance();
 
         try {
             tiles[0] = new Tile();
-            tiles[0].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/agua.png"))
-            );
+            tiles[0].setImage(loader.cargarImagen("tiles/agua.png"));
             tiles[0].setCollision(true);
 
             tiles[1] = new Tile();
-            tiles[1].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/arbol.png"))
-            );
+            tiles[1].setImage(loader.cargarImagen("tiles/arbol.png"));
             tiles[1].setCollision(true);
 
             tiles[2] = new Tile();
-            tiles[2].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/arena.png"))
-            );
+            tiles[2].setImage(loader.cargarImagen("tiles/arena.png"));
             tiles[2].setCollision(false);
 
             tiles[3] = new Tile();
-            tiles[3].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/muro.png"))
-            );
+            tiles[3].setImage(loader.cargarImagen("tiles/muro.png"));
             tiles[3].setCollision(true);
 
             tiles[4] = new Tile();
-            tiles[4].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/pasto.png"))
-            );
+            tiles[4].setImage(loader.cargarImagen("tiles/pasto.png"));
             tiles[4].setCollision(false);
 
             tiles[5] = new Tile();
-            tiles[5].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/suelo.png"))
-            );
+            tiles[5].setImage(loader.cargarImagen("tiles/suelo.png"));
             tiles[5].setCollision(false);
 
             tiles[6] = new Tile();
-            tiles[6].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/piedra.png"))
-            );
+            tiles[6].setImage(loader.cargarImagen("tiles/piedra.png"));
             tiles[6].setCollision(true);
 
             tiles[7] = new Tile();
-            tiles[7].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/nube.png"))
-            );
+            tiles[7].setImage(loader.cargarImagen("tiles/nube.png"));
             tiles[7].setCollision(false);
 
             tiles[8] = new Tile();
-            tiles[8].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/volcan.png"))
-            );
+            tiles[8].setImage(loader.cargarImagen("tiles/volcan.png"));
             tiles[8].setCollision(true);
 
             tiles[9] = new Tile();
-            tiles[9].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/cofre.png"))
-            );
+            tiles[9].setImage(loader.cargarImagen("tiles/cofre.png"));
             tiles[9].setCollision(true);
 
             tiles[10] = new Tile();
-            tiles[10].setImage(
-                javax.imageio.ImageIO.read(new java.io.File("tiles/cofre_cerrado.png"))
-            );
+            tiles[10].setImage(loader.cargarImagen("tiles/cofre_cerrado.png"));
             tiles[10].setCollision(true);
 
             System.out.println("Tiles visuales cargados correctamente");
@@ -162,25 +140,21 @@ public class ManejadorMapaInfinito {
 
     private void limpiarChunksLejanos() {
         Iterator<Map.Entry<String, Chunk>> iterator = chunksActivos
-            .entrySet()
-            .iterator();
+                .entrySet()
+                .iterator();
 
-        while (
-            iterator.hasNext() &&
-            chunksActivos.size() > MAX_CHUNKS_EN_MEMORIA * 0.8
-        ) {
+        while (iterator.hasNext() &&
+                chunksActivos.size() > MAX_CHUNKS_EN_MEMORIA * 0.8) {
             Map.Entry<String, Chunk> entry = iterator.next();
             Chunk chunk = entry.getValue();
 
             int cx = chunk.getChunkX();
             int cy = chunk.getChunkY();
 
-            if (
-                cx < minChunkX - MARGEN_CHUNKS ||
-                cx > maxChunkX + MARGEN_CHUNKS ||
-                cy < minChunkY - MARGEN_CHUNKS ||
-                cy > maxChunkY + MARGEN_CHUNKS
-            ) {
+            if (cx < minChunkX - MARGEN_CHUNKS ||
+                    cx > maxChunkX + MARGEN_CHUNKS ||
+                    cy < minChunkY - MARGEN_CHUNKS ||
+                    cy > maxChunkY + MARGEN_CHUNKS) {
                 iterator.remove();
             }
         }
@@ -234,20 +208,17 @@ public class ManejadorMapaInfinito {
                 int pantallaX = tileX * tamanioTile - camaraX;
                 int pantallaY = tileY * tamanioTile - camaraY;
 
-                if (
-                    tileType >= 0 &&
-                    tileType < tiles.length &&
-                    tiles[tileType] != null &&
-                    tiles[tileType].getImage() != null
-                ) {
+                if (tileType >= 0 &&
+                        tileType < tiles.length &&
+                        tiles[tileType] != null &&
+                        tiles[tileType].getImage() != null) {
                     g2.drawImage(
-                        tiles[tileType].getImage(),
-                        pantallaX,
-                        pantallaY,
-                        tamanioTile,
-                        tamanioTile,
-                        null
-                    );
+                            tiles[tileType].getImage(),
+                            pantallaX,
+                            pantallaY,
+                            tamanioTile,
+                            tamanioTile,
+                            null);
                 }
             }
         }
@@ -260,7 +231,7 @@ public class ManejadorMapaInfinito {
 
                 // Only draw if on screen
                 if (pantallaX + tamanioTile > 0 && pantallaX < anchoPantalla &&
-                    pantallaY + tamanioTile > 0 && pantallaY < altoPantalla) {
+                        pantallaY + tamanioTile > 0 && pantallaY < altoPantalla) {
                     g2.drawImage(item.getSprite(), pantallaX, pantallaY, tamanioTile, tamanioTile, null);
                 }
             }
@@ -268,19 +239,17 @@ public class ManejadorMapaInfinito {
     }
 
     public String getEstadisticas() {
-        return (
-            "Chunks activos: " +
-            chunksActivos.size() +
-            " | Área: [" +
-            minChunkX +
-            "," +
-            minChunkY +
-            "] a [" +
-            maxChunkX +
-            "," +
-            maxChunkY +
-            "]"
-        );
+        return ("Chunks activos: " +
+                chunksActivos.size() +
+                " | Área: [" +
+                minChunkX +
+                "," +
+                minChunkY +
+                "] a [" +
+                maxChunkX +
+                "," +
+                maxChunkY +
+                "]");
     }
 
     public int getChunksActivos() {
@@ -290,9 +259,7 @@ public class ManejadorMapaInfinito {
     public boolean tieneSolido(int tileX, int tileY) {
         int tileType = getTileEnMundo(tileX, tileY);
 
-        if (
-            tileType >= 0 && tileType < tiles.length && tiles[tileType] != null
-        ) {
+        if (tileType >= 0 && tileType < tiles.length && tiles[tileType] != null) {
             return tiles[tileType].isCollision();
         }
 

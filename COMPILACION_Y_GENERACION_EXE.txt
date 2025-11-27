@@ -1,0 +1,410 @@
+PROCESO DE COMPILACIÓN Y GENERACIÓN DE EJECUTABLE
+
+================================================================================
+
+MANUAL TÉCNICO
+
+Proyecto: VideoJuego
+Fecha: Noviembre 2025
+Sección: Build & Deployment
+
+
+1. INTRODUCCIÓN
+
+Este documento describe de manera detallada el proceso completo de compilación
+del proyecto VideoJuego y la generación del archivo ejecutable (.exe) para
+distribución en sistemas Windows.
+
+El proceso consta de dos fases principales:
+  1. Compilación y empaquetado JAR (compilar.bat)
+  2. Generación de ejecutable nativo (generar_exe.bat)
+
+
+2. FASE 1: COMPILACIÓN Y CREACIÓN DEL JAR
+
+2.1 Archivo: compilar.bat
+
+Este script automatiza todo el proceso de compilación del proyecto Java y la
+creación del archivo JAR ejecutable.
+
+
+2.2 Estructura del Proceso
+
+El proceso de compilación se divide en 6 etapas:
+
+ETAPA 1: Compilación de Archivos Java
+ETAPA 2: Extracción de Dependencias
+ETAPA 3: Copia de Recursos
+ETAPA 4: Creación del Manifest
+ETAPA 5: Generación del JAR
+ETAPA 6: Prueba de Ejecución
+
+
+2.3 Descripción Detallada de Cada Etapa
+
+ETAPA 1: COMPILACIÓN DE ARCHIVOS JAVA
+
+Objetivo: Compilar todos los archivos .java del proyecto
+
+Pasos ejecutados:
+  1. Limpieza de compilaciones previas
+     - Elimina el directorio bin/ si existe
+     - Crea un nuevo directorio bin/ vacío
+  
+  2. Generación de lista de archivos fuente
+     - Ejecuta: dir /s /B *.java > sources.txt
+     - Crea un archivo temporal con todas las rutas de archivos .java
+  
+  3. Compilación
+     - Ejecuta: javac -cp "lib/*" -d bin @sources.txt
+     - Compila todos los archivos Java
+     - Coloca los .class resultantes en bin/
+     - Incluye las librerías de lib/ en el classpath
+  
+  4. Verificación
+     - Comprueba el código de salida
+     - Si hay errores (errorlevel != 0), detiene el proceso
+  
+  5. Limpieza
+     - Elimina el archivo temporal sources.txt
+
+
+ETAPA 2: EXTRACCIÓN DE DEPENDENCIAS
+
+Objetivo: Incluir las librerías externas dentro del JAR final
+
+Proceso:
+  1. Cambia al directorio bin/
+  
+  2. Para cada archivo .jar en lib/:
+     - Ejecuta: jar xf "nombre-libreria.jar"
+     - Extrae todo el contenido de la librería
+     - Los .class extraídos quedan disponibles en bin/
+  
+  3. Regresa al directorio raíz
+
+Librerías incluidas:
+  - org.json (para procesamiento de archivos JSON)
+  - Cualquier otra dependencia en la carpeta lib/
+
+Razón: Al extraer las librerías y colocar sus .class en bin/, el JAR final
+será autónomo (no requiere librerías externas).
+
+
+ETAPA 3: COPIA DE RECURSOS
+
+Objetivo: Incluir todos los recursos (imágenes, datos) en el JAR
+
+Comandos ejecutados:
+  xcopy /E /I /Y tiles bin\tiles
+  xcopy /E /I /Y spritesjugador bin\spritesjugador
+  xcopy /E /I /Y spritesenemigos bin\spritesenemigos
+  xcopy /E /I /Y data bin\data
+
+Parámetros de xcopy:
+  /E - Copia subdirectorios, incluso vacíos
+  /I - Asume que el destino es un directorio
+  /Y - Suprime confirmación de sobrescritura
+
+Estructura resultante en bin/:
+  bin/
+    +-- Main/
+    +-- domain/
+    +-- tiles/
+    |   +-- agua.png
+    |   +-- pasto.png
+    |   +-- ...
+    +-- spritesjugador/
+    +-- spritesenemigos/
+    +-- data/
+        +-- data.json
+
+
+ETAPA 4: CREACIÓN DEL MANIFEST
+
+Objetivo: Crear el archivo manifest que define la clase principal
+
+Contenido del manifest.txt:
+  Main-Class: Main.Main
+  
+  (línea vacía final requerida por especificación JAR)
+
+La línea vacía final es obligatoria según la especificación de archivos JAR
+de Oracle.
+
+
+ETAPA 5: GENERACIÓN DEL JAR
+
+Objetivo: Empaquetar todo en un archivo JAR ejecutable
+
+Comando:
+  jar cfm VideoJuego.jar manifest.txt -C bin .
+
+Parámetros:
+  c - Crear nuevo archivo JAR
+  f - Especificar nombre del archivo (VideoJuego.jar)
+  m - Incluir información del manifest (manifest.txt)
+  -C bin . - Cambiar al directorio bin y agregar todo su contenido
+
+Resultado: VideoJuego.jar conteniendo:
+  - Todas las clases compiladas
+  - Todas las dependencias (extraídas)
+  - Todos los recursos (tiles, sprites, data)
+  - Manifest con clase principal
+
+
+ETAPA 6: PRUEBA DE EJECUCIÓN
+
+Objetivo: Verificar que el JAR funciona correctamente
+
+Comando:
+  java -jar VideoJuego.jar
+
+Esta etapa lanza la aplicación para verificación manual antes de crear el
+ejecutable Windows.
+
+
+3. FASE 2: GENERACIÓN DEL EJECUTABLE
+
+3.1 Archivo: generar_exe.bat
+
+Este script convierte el JAR en un ejecutable nativo de Windows usando la
+herramienta jpackage incluida en JDK 14+.
+
+
+3.2 Proceso de Generación
+
+PASO 1: Verificación de Prerequisitos
+
+  Verifica que existe VideoJuego.jar
+  Si no existe, muestra error y solicita ejecutar compilar.bat primero
+
+
+PASO 2: Preparación de Estructura Temporal
+
+  1. Elimina carpeta temp-jpackage si existe
+  2. Crea nueva carpeta temp-jpackage
+  3. Copia VideoJuego.jar a temp-jpackage/
+
+
+PASO 3: Limpieza de Salida Anterior
+
+  Elimina carpeta VideoJuego/ si existe de ejecuciones anteriores
+
+
+PASO 4: Generación con jpackage
+
+Comando:
+  jpackage ^
+    --input temp-jpackage ^
+    --name VideoJuego ^
+    --main-jar VideoJuego.jar ^
+    --main-class Main.Main ^
+    --type app-image ^
+    --dest .
+
+Parámetros explicados:
+  --input temp-jpackage
+    Directorio que contiene el JAR y recursos
+
+  --name VideoJuego
+    Nombre de la aplicación
+
+  --main-jar VideoJuego.jar
+    Archivo JAR principal a ejecutar
+
+  --main-class Main.Main
+    Clase que contiene el método main()
+
+  --type app-image
+    Genera ejecutable portable (sin instalador)
+
+  --dest .
+    Directorio de salida (directorio actual)
+
+
+PASO 5: Limpieza de Archivos Temporales
+
+  Elimina la carpeta temp-jpackage
+
+
+PASO 6: Resultado Final
+
+Estructura generada:
+  VideoJuego/
+    +-- VideoJuego.exe         (Ejecutable principal)
+    +-- app/
+    |   +-- VideoJuego.jar     (JAR incluido)
+    +-- runtime/
+        +-- bin/
+        +-- lib/
+        +-- ...                (JRE embebido)
+
+
+4. ESTRUCTURA DE ARCHIVOS COMPLETA
+
+4.1 Antes de la Compilación
+
+proyecto-objetos-videojuego/
+  +-- Main/
+  +-- domain/
+  +-- infrastructure/
+  +-- model/
+  +-- Presentation/
+  +-- lib/
+  |   +-- org.json.jar
+  +-- tiles/
+  +-- spritesjugador/
+  +-- spritesenemigos/
+  +-- data/
+  +-- compilar.bat
+  +-- generar_exe.bat
+  +-- ejecutar.bat
+
+
+4.2 Después de la Compilación
+
+proyecto-objetos-videojuego/
+  +-- ... (archivos originales)
+  +-- bin/                     (generado)
+  |   +-- Main/
+  |   +-- domain/
+  |   +-- tiles/
+  |   +-- ...
+  +-- VideoJuego.jar          (generado)
+  +-- manifest.txt            (generado)
+
+
+4.3 Después de Generar el .exe
+
+proyecto-objetos-videojuego/
+  +-- ... (archivos anteriores)
+  +-- VideoJuego/             (generado)
+      +-- VideoJuego.exe
+      +-- app/
+      +-- runtime/
+
+
+5. REQUISITOS DEL SISTEMA
+
+5.1 Para Compilación
+
+  - Java Development Kit (JDK) 14 o superior
+  - Sistema operativo: Windows
+  - Espacio en disco: Mínimo 500 MB
+
+5.2 Para Ejecución del .exe
+
+  - Sistema operativo: Windows 10 o superior
+  - NO requiere Java instalado (JRE embebido)
+  - Espacio en disco: Aproximadamente 200 MB
+
+
+6. INSTRUCCIONES DE USO
+
+6.1 Compilar el Proyecto
+
+Desde el directorio raíz del proyecto:
+  1. Abrir terminal o CMD
+  2. Ejecutar: compilar.bat
+  3. Esperar mensaje "JAR creado exitosamente!"
+  4. Verificar que se abre la aplicación para prueba
+
+6.2 Generar Ejecutable
+
+Después de una compilación exitosa:
+  1. Ejecutar: generar_exe.bat
+  2. Esperar el proceso de jpackage (puede tardar 1-2 minutos)
+  3. Verificar mensaje "Ejecutable generado exitosamente!"
+
+6.3 Distribuir la Aplicación
+
+  1. Comprimir la carpeta VideoJuego/ completa en un archivo ZIP
+  2. Distribuir el archivo ZIP
+  3. El usuario descomprime y ejecuta VideoJuego.exe
+
+
+7. SOLUCIÓN DE PROBLEMAS
+
+7.1 Error: "javac no se reconoce como comando"
+
+Causa: Java JDK no está en el PATH
+Solución: 
+  - Instalar JDK 14 o superior
+  - Agregar la ruta bin del JDK al PATH del sistema
+
+7.2 Error: "jpackage no se reconoce como comando"
+
+Causa: JDK versión inferior a 14
+Solución:
+  - Actualizar a JDK 14 o superior
+  - jpackage se incluye desde JDK 14
+
+7.3 Error: "No se encuentra VideoJuego.jar"
+
+Causa: No se ha ejecutado compilar.bat
+Solución:
+  - Ejecutar primero compilar.bat
+  - Luego ejecutar generar_exe.bat
+
+7.4 Error de compilación en archivos Java
+
+Causa: Código fuente con errores o dependencias faltantes
+Solución:
+  - Revisar mensajes de error de javac
+  - Verificar que todas las librerías estén en lib/
+  - Corregir errores de sintaxis en el código
+
+
+8. NOTAS IMPORTANTES
+
+- El proceso de compilación debe completarse sin errores antes de generar el
+  ejecutable
+  
+- El archivo VideoJuego.jar puede ejecutarse directamente con:
+  java -jar VideoJuego.jar
+  
+- La carpeta VideoJuego/ generada contiene un JRE embebido, por lo que NO
+  requiere que el usuario tenga Java instalado
+  
+- El tamaño del ejecutable es mayor (aproximadamente 200 MB) debido al JRE
+  embebido, pero esto garantiza portabilidad total
+  
+- Para redistribuir, se debe incluir TODA la carpeta VideoJuego/, no solo
+  el archivo .exe
+
+
+9. MANTENIMIENTO
+
+9.1 Actualizar el Juego
+
+  1. Modificar archivos fuente (.java)
+  2. Ejecutar compilar.bat
+  3. Ejecutar generar_exe.bat
+  4. Redistribuir la nueva carpeta VideoJuego/
+
+9.2 Agregar Nuevas Dependencias
+
+  1. Colocar archivo .jar en carpeta lib/
+  2. El script compilar.bat lo incluirá automáticamente
+
+9.3 Agregar Nuevos Recursos
+
+  1. Agregar archivos a tiles/, sprites o data/
+  2. El script compilar.bat los copiará automáticamente
+
+
+10. CONCLUSIÓN
+
+El proceso de compilación y generación de ejecutable está completamente
+auto matizado mediante los scripts compilar.bat y generar_exe.bat.
+
+Este sistema garantiza:
+  - Compilación consistente y reproducible
+  - Inclusión automática de todas las dependencias
+  - Generación de ejecutable portable
+  - Distribución sin dependencias externas de Java
+
+
+================================================================================
+FIN DEL DOCUMENTO

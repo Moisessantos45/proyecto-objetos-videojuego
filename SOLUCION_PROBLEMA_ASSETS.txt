@@ -1,0 +1,247 @@
+SOLUCIÓN AL PROBLEMA DE CARGA DE RECURSOS EN EJECUTABLES EMPAQUETADOS
+
+================================================================================
+
+DOCUMENTO TÉCNICO
+
+Proyecto: VideoJuego
+Fecha: Noviembre 2025
+Autor: Equipo de Desarrollo
+
+
+1. RESUMEN EJECUTIVO
+
+Este documento describe la solución implementada para resolver el problema de 
+carga de recursos (assets) cuando la aplicación se ejecuta como archivo 
+ejecutable empaquetado (.exe o .jar). Se identificaron dos problemas críticos:
+el mapa se mostraba completamente negro y los acertijos no se cargaban.
+
+
+2. DESCRIPCIÓN DEL PROBLEMA
+
+2.1 Síntomas Observados
+
+Al ejecutar el archivo VideoJuego.exe, se presentaron los siguientes problemas:
+
+- El mapa del juego aparecía completamente negro, sin renderizar ningún tile
+  (agua, pasto, piedra, árboles, etc.).
+  
+- Los acertijos del juego no se cargaban, impidiendo el funcionamiento correcto
+  del sistema de preguntas y respuestas.
+
+
+2.2 Análisis de Causa Raíz
+
+Se identificó que el problema radicaba en el método de carga de recursos. 
+El código original utilizaba rutas del sistema de archivos local, las cuales
+no funcionan cuando los recursos están empaquetados dentro de un archivo JAR
+o ejecutable.
+
+Específicamente, se encontraron dos implementaciones problemáticas:
+
+ARCHIVO: domain/ManejadorMapaInfinito.java
+LÍNEA: 52 (y similares)
+CÓDIGO PROBLEMÁTICO:
+  javax.imageio.ImageIO.read(new java.io.File("tiles/agua.png"))
+
+ARCHIVO: infrastructure/AcertijosLoader.java  
+LÍNEA: 27
+CÓDIGO PROBLEMÁTICO:
+  Files.readAllBytes(Paths.get("data/data.json"))
+
+
+2.3 Causa Técnica
+
+Los métodos File() y Paths.get() intentan acceder a archivos en el sistema de
+archivos del sistema operativo. Sin embargo, cuando la aplicación se empaqueta
+en un JAR o ejecutable, los recursos no existen como archivos separados en el
+disco, sino que están contenidos dentro del archivo empaquetado.
+
+El resultado es que el sistema intenta buscar archivos que no existen en las
+ubicaciones especificadas, fallando silenciosamente y retornando nulo, lo que
+causa que el mapa aparezca negro y los acertijos no se carguen.
+
+
+3. SOLUCIÓN IMPLEMENTADA
+
+3.1 Enfoque de Solución
+
+La solución consiste en utilizar el mecanismo de carga de recursos desde el
+classpath de Java, que funciona correctamente tanto en entornos de desarrollo
+(archivos sueltos) como en entornos de producción (archivos empaquetados).
+
+
+3.2 Cambios en ManejadorMapaInfinito.java
+
+Se modificó el método cargarTilesVisuales() para utilizar la clase 
+ResourceLoader existente, que implementa correctamente la carga desde classpath.
+
+ANTES (líneas 46-122):
+  tiles[0].setImage(
+    javax.imageio.ImageIO.read(new java.io.File("tiles/agua.png"))
+  );
+
+DESPUÉS (líneas 46-105):
+  infrastructure.ResourceLoader loader = 
+    infrastructure.ResourceLoader.getInstance();
+  tiles[0].setImage(loader.cargarImagen("tiles/agua.png"));
+
+Este cambio se aplicó a todos los tiles (11 tipos diferentes): agua, arbol,
+arena, muro, pasto, suelo, piedra, nube, volcan, cofre y cofre_cerrado.
+
+
+3.3 Cambios en AcertijosLoader.java
+
+Se modificó el método cargarAcertijos() para leer el archivo JSON desde el
+classpath utilizando InputStream.
+
+ANTES (línea 27):
+  String contenido = new String(
+    Files.readAllBytes(Paths.get(rutaArchivo))
+  );
+
+DESPUÉS (líneas 25-39):
+  String contenido;
+  var inputStream = getClass()
+    .getClassLoader()
+    .getResourceAsStream(rutaArchivo);
+  
+  if (inputStream != null) {
+    contenido = new String(inputStream.readAllBytes());
+    inputStream.close();
+  } else {
+    contenido = new String(Files.readAllBytes(Paths.get(rutaArchivo)));
+  }
+
+La solución implementa un patrón de fallback que intenta primero cargar desde
+el classpath (para archivos empaquetados) y si falla, intenta desde el sistema
+de archivos (para desarrollo).
+
+
+3.4 Funcionamiento de ResourceLoader
+
+La clase ResourceLoader (infrastructure/ResourceLoader.java) ya implementaba
+correctamente el patrón de carga desde classpath:
+
+  public BufferedImage cargarImagen(String ruta) {
+    var resourceStream = getClass()
+      .getClassLoader()
+      .getResourceAsStream(ruta);
+    
+    if (resourceStream != null) {
+      imagen = ImageIO.read(resourceStream);
+      resourceStream.close();
+    } else {
+      File file = new File(ruta);
+      if (file.exists()) {
+        imagen = ImageIO.read(file);
+      }
+    }
+    
+    return imagen;
+  }
+
+Este método garantiza compatibilidad en ambos entornos.
+
+
+4. VENTAJAS DE LA SOLUCIÓN
+
+- PORTABILIDAD: Funciona tanto en desarrollo como en producción sin cambios
+- CONFIABILIDAD: Elimina la dependencia de rutas de archivos externas
+- MANTENIBILIDAD: Utiliza patrones estándar de Java para carga de recursos
+- COMPATIBILIDAD: Soporta JAR, EXE y ejecución directa desde IDE
+
+
+5. PROCESO DE VERIFICACIÓN
+
+5.1 Pasos de Compilación
+
+1. Ejecutar compilar.bat para recompilar el proyecto completo
+2. Verificar que no hay errores de compilación
+3. Confirmar que VideoJuego.jar se genera correctamente
+
+5.2 Pasos de Generación de Ejecutable
+
+1. Ejecutar generar_exe.bat para crear el ejecutable
+2. Verificar que se crea la carpeta VideoJuego/
+3. Confirmar la existencia de VideoJuego/VideoJuego.exe
+
+5.3 Verificación Funcional
+
+Al ejecutar VideoJuego.exe se debe verificar:
+
+- El mapa se renderiza correctamente mostrando todos los tiles visuales
+- Los diferentes tipos de terreno son visibles (agua, pasto, piedra, etc.)
+- Los acertijos se cargan y se muestran en el juego
+- No aparecen errores en consola relacionados con carga de recursos
+
+
+6. CONSIDERACIONES IMPORTANTES
+
+6.1 Inclusión de Recursos en el JAR
+
+Es fundamental que el script de compilación incluya todas las carpetas de
+recursos en el JAR final:
+
+- tiles/
+- spritesjugador/
+- spritesenemigos/
+- data/
+
+El script compilar.bat ya incluye estos comandos (líneas 33-36):
+
+  xcopy /E /I /Y tiles bin\tiles
+  xcopy /E /I /Y spritesjugador bin\spritesjugador
+  xcopy /E /I /Y spritesenemigos bin\spritesenemigos
+  xcopy /E /I /Y data bin\data
+
+
+6.2 Estructura del Classpath
+
+La estructura debe mantenerse idéntica dentro del JAR:
+
+  VideoJuego.jar/
+    +-- Main/
+    +-- domain/
+    +-- infrastructure/
+    +-- model/
+    +-- tiles/
+    |   +-- agua.png
+    |   +-- pasto.png
+    |   +-- ...
+    +-- data/
+    |   +-- data.json
+    +-- ...
+
+
+7. CONCLUSIONES
+
+La migración de carga de recursos basada en File() a carga basada en classpath
+mediante getResourceAsStream() resuelve completamente los problemas de 
+visualización y funcionalidad en el ejecutable empaquetado.
+
+La solución es robusta, portable y sigue las mejores prácticas de desarrollo
+Java para aplicaciones distribuibles.
+
+
+8. ARCHIVOS MODIFICADOS
+
+- domain/ManejadorMapaInfinito.java
+  Líneas modificadas: 46-122
+  Cambio: Uso de ResourceLoader en lugar de File
+
+- infrastructure/AcertijosLoader.java
+  Líneas modificadas: 25-55
+  Cambio: Uso de getResourceAsStream en lugar de Files.readAllBytes
+
+
+9. REFERENCIAS TÉCNICAS
+
+- Java ClassLoader.getResourceAsStream() - Documentación Oracle
+- Java ImageIO - Lectura de imágenes desde classpath
+- JAR File Specification - Oracle Java SE
+- jpackage Tool - Empaquetado de aplicaciones Java
+
+
+================================================================================
+FIN DEL DOCUMENTO
