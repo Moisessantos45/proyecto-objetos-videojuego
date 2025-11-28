@@ -1,14 +1,3 @@
-# Documentación Detallada: Sistema de Colisiones
-
-Este documento describe el sistema de detección y gestión de colisiones. Se abordan las interacciones entre entidades (jugador, enemigos) y de estas con el entorno (tiles sólidos), detallando los algoritmos, archivos y lógicas implicadas.
-
----
-
-## Sección 1: El Fundamento - Las "Hitboxes" o Áreas Sólidas
-
-Para que el sistema de colisiones funcione, cada entidad que participa en la física del mundo necesita una representación de su cuerpo físico. A esto comúnmente se le llama "hitbox".
-
-- Técnica: Se utiliza la clase java.awt.Rectangle como la forma geométrica para todas las hitboxes. Esta técnica se conoce como AABB (Axis-Aligned Bounding Box), ya que los rectángulos no rotan, lo que simplifica enormemente los cálculos de intersección.
 
 - Archivo Clave: model/Transform.java
 

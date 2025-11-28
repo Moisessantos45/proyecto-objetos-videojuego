@@ -1,175 +1,248 @@
-# Documentación Detallada: Lógica de Movimiento del Personaje
+```
+================================================================================
 
-Este documento desglosa el sistema de movimiento del personaje, explicando la colaboración entre las diferentes clases y sistemas para lograr un movimiento fluido y con detección de colisiones.
+DOCUMENTACION DETALLADA: LOGICA DE MOVIMIENTO DEL PERSONAJE
 
----
+================================================================================
 
-## Sección 1: Visión General del Flujo de Movimiento
 
-El movimiento del personaje no es una acción monolítica, sino una cadena de procesos coordinados que se ejecutan en cada fotograma del juego. El flujo general es el siguiente:
+INTRODUCCION
 
-1.  Captura de Entrada: El sistema detecta la pulsación y liberación de las teclas de movimiento (W, A, S, D) de forma asíncrona.
-2.  Actualización de Estado: El JugadorSystem lee el estado de las teclas y actualiza la "intención" de movimiento del jugador (dirección, estado de movimiento).
-3.  Detección de Colisiones: Antes de moverse, el ColisionSystem simula el siguiente paso del jugador para comprobar si colisionará con un objeto sólido (como un muro).
-4.  Actualización de Posición: Si no se detecta ninguna colisión, el MovimientoSystem finalmente actualiza las coordenadas del jugador en el mundo.
+Este documento desglosa el sistema de movimiento del personaje, explicando la
+colaboracion entre las diferentes clases y sistemas para lograr un movimiento
+fluido y con deteccion de colisiones.
 
-Este enfoque garantiza que la lógica esté desacoplada y sea fácil de mantener: la entrada, la lógica del jugador y la física del mundo están separadas.
 
----
+1. VISION GENERAL DEL FLUJO DE MOVIMIENTO
 
-## Sección 2: Captura de Entrada del Teclado
+El movimiento del personaje no es una accion monolitica, sino una cadena de
+procesos coordinados que se ejecutan en cada fotograma del juego. El flujo
+general es el siguiente:
+
+    1. Captura de Entrada
+       El sistema detecta la pulsacion y liberacion de las teclas de 
+       movimiento (W, A, S, D) de forma asincrona.
+
+    2. Actualizacion de Estado
+       El JugadorSystem lee el estado de las teclas y actualiza la "intencion"
+       de movimiento del jugador (direccion, estado de movimiento).
+
+    3. Deteccion de Colisiones
+       Antes de moverse, el ColisionSystem simula el siguiente paso del jugador
+       para comprobar si colisionara con un objeto solido (como un muro).
+
+    4. Actualizacion de Posicion
+       Si no se detecta ninguna colision, el MovimientoSystem finalmente 
+       actualiza las coordenadas del jugador en el mundo.
+
+Este enfoque garantiza que la logica este desacoplada y sea facil de mantener:
+la entrada, la logica del jugador y la fisica del mundo estan separadas.
+
+
+2. CAPTURA DE ENTRADA DEL TECLADO
 
 La base de todo movimiento es la captura de la entrada del usuario.
 
-- Archivo Principal: Main/ManejadorTeclas.java
-- Técnica Utilizada: Se implementa la interfaz KeyListener de Java y se utilizan banderas booleanas (boolean flags). Este método es preferible a comprobar el estado de las teclas en cada ciclo, ya que es más eficiente y responde a eventos, no a sondeos.
+    Archivo Principal: Main/ManejadorTeclas.java
+    
+    Tecnica Utilizada: Se implementa la interfaz KeyListener de Java y se 
+    utilizan banderas booleanas (boolean flags). Este metodo es preferible a
+    comprobar el estado de las teclas en cada ciclo, ya que es mas eficiente
+    y responde a eventos, no a sondeos.
 
-- Lógica Detallada:
-  1.  La clase ManejadorTeclas contiene variables públicas booleanas como upPressed, downPressed, leftPressed, rightPressed.
-  2.  El método keyPressed(KeyEvent e) se activa automáticamente cuando una tecla es presionada. Dentro de este, un switch o una serie de if comprueban el keyCode y establecen la bandera correspondiente a true.
-  3.  De forma similar, el método keyReleased(KeyEvent e) pone la bandera correspondiente a false cuando la tecla se suelta.
+2.1 Logica Detallada
 
-- Código Ilustrativo (ManejadorTeclas.java):
-  java
-  public class ManejadorTeclas implements KeyListener {
-      public boolean upPressed, downPressed, leftPressed, rightPressed;
+    1. La clase ManejadorTeclas contiene variables publicas booleanas como
+       upPressed, downPressed, leftPressed, rightPressed.
+       
+    2. El metodo keyPressed(KeyEvent e) se activa automaticamente cuando una
+       tecla es presionada. Dentro de este, un switch o una serie de if
+       comprueban el keyCode y establecen la bandera correspondiente a true.
+       
+    3. De forma similar, el metodo keyReleased(KeyEvent e) pone la bandera
+       correspondiente a false cuando la tecla se suelta.
 
-      // Se asume que el GamePanel está en el estado de JUEGO
-      @Override
-      public void keyPressed(KeyEvent e) {
-          int code = e.getKeyCode();
+2.2 Codigo Ilustrativo (ManejadorTeclas.java)
 
-          if (code == KeyEvent.VK_W) { upPressed = true; }
-          if (code == KeyEvent.VK_S) { downPressed = true; }
-          if (code == KeyEvent.VK_A) { leftPressed = true; }
-          if (code == KeyEvent.VK_D) { rightPressed = true; }
-      }
+    public class ManejadorTeclas implements KeyListener {
+        public boolean upPressed, downPressed, leftPressed, rightPressed;
 
-      @Override
-      public void keyReleased(KeyEvent e) {
-          int code = e.getKeyCode();
+        // Se asume que el GamePanel esta en el estado de JUEGO
+        @Override
+        public void keyPressed(KeyEvent e) {
+            int code = e.getKeyCode();
 
-          if (code == KeyEvent.VK_W) { upPressed = false; }
-          if (code == KeyEvent.VK_S) { downPressed = false; }
-          if (code == KeyEvent.VK_A) { leftPressed = false; }
-          if (code == KeyEvent.VK_D) { rightPressed = false; }
-      }
+            if (code == KeyEvent.VK_W) { upPressed = true; }
+            if (code == KeyEvent.VK_S) { downPressed = true; }
+            if (code == KeyEvent.VK_A) { leftPressed = true; }
+            if (code == KeyEvent.VK_D) { rightPressed = true; }
+        }
 
-      // keyTyped no se suele usar para movimiento en tiempo real
-      @Override
-      public void keyTyped(KeyEvent e) {}
-  }
-  
+        @Override
+        public void keyReleased(KeyEvent e) {
+            int code = e.getKeyCode();
 
----
+            if (code == KeyEvent.VK_W) { upPressed = false; }
+            if (code == KeyEvent.VK_S) { downPressed = false; }
+            if (code == KeyEvent.VK_A) { leftPressed = false; }
+            if (code == KeyEvent.VK_D) { rightPressed = false; }
+        }
 
-## Sección 3: Actualización del Estado y Dirección del Jugador
+        // keyTyped no se suele usar para movimiento en tiempo real
+        @Override
+        public void keyTyped(KeyEvent e) {}
+    }
 
-Esta lógica traduce las simples banderas de teclado en una dirección y estado coherentes para el personaje.
 
-- Archivo Principal: domain/JugadorSystem.java
-- Propósito: Actuar como el "cerebro" del jugador, decidiendo qué hacer basándose en la entrada.
-- Lógica Detallada: En cada fotograma, el método update() de JugadorSystem se ejecuta. Lee las banderas de ManejadorTeclas. Basándose en qué teclas están presionadas, establece la propiedad direction en el Transform del jugador (ej. "up", "down"). Esto es importante para que el sistema de renderizado sepa qué sprite dibujar.
+3. ACTUALIZACION DEL ESTADO Y DIRECCION DEL JUGADOR
 
-- Código Ilustrativo (JugadorSystem.java):
-  java
-  public class JugadorSystem implements IUpdateable {
-      private JugadorModel jugador; // El modelo de datos del jugador
-      private ManejadorTeclas keyH; // Referencia al manejador de teclas
+Esta logica traduce las simples banderas de teclado en una direccion y estado
+coherentes para el personaje.
 
-      // Constructor que recibe las dependencias
-      public JugadorSystem(JugadorModel jugador, ManejadorTeclas keyH) {
-          this.jugador = jugador;
-          this.keyH = keyH;
-      }
+    Archivo Principal: domain/JugadorSystem.java
+    
+    Proposito: Actuar como el "cerebro" del jugador, decidiendo que hacer
+    basandose en la entrada.
 
-      @Override
-      public void update() {
-          // Si cualquier tecla de movimiento está presionada
-          if (keyH.upPressed || keyH.downPressed || keyH.leftPressed || keyH.rightPressed) {
-              if (keyH.upPressed) {
-                  jugador.getTransform().setDirection("up");
-              } else if (keyH.downPressed) {
-                  jugador.getTransform().setDirection("down");
-              } else if (keyH.leftPressed) {
-                  jugador.getTransform().setDirection("left");
-              } else if (keyH.rightPressed) {
-                  jugador.getTransform().setDirection("right");
-              }
-              jugador.setMoving(true);
-          } else {
-              jugador.setMoving(false);
-          }
-      }
-  }
-  
+3.1 Logica Detallada
 
----
+En cada fotograma, el metodo update() de JugadorSystem se ejecuta. Lee las
+banderas de ManejadorTeclas. Basandose en que teclas estan presionadas,
+establece la propiedad direction en el Transform del jugador (ej. "up", "down").
+Esto es importante para que el sistema de renderizado sepa que sprite dibujar.
 
-## Sección 4: Detección Predictiva de Colisiones
+3.2 Codigo Ilustrativo (JugadorSystem.java)
 
-Antes de cambiar las coordenadas del jugador, es imperativo comprobar si el movimiento es válido.
+    public class JugadorSystem implements IUpdateable {
+        private JugadorModel jugador; // El modelo de datos del jugador
+        private ManejadorTeclas keyH; // Referencia al manejador de teclas
 
-- Archivo Principal: domain/ColisionSystem.java
-- Propósito: Prevenir que una entidad atraviese tiles marcados como sólidos.
-- Lógica Detallada:
-  1.  El ColisionSystem tiene un método checkTileCollision(EntidadModel entity).
-  2.  Este método no mira la posición actual, sino la posición futura. Calcula hacia dónde se moverá la caja de colisiones (solidArea) de la entidad en el siguiente fotograma basándose en su dirección y velocidad.
-  3.  Convierte estas coordenadas futuras del mundo a coordenadas de la cuadrícula de tiles (ej. tileNum = worldX / tileSize).
-  4.  Comprueba los dos tiles hacia los que se dirige la entidad (ej. si se mueve a la derecha, comprueba los tiles que tocarían la esquina superior derecha e inferior derecha de su solidArea).
-  5.  Obtiene esos Tile del mapa y verifica su propiedad isSolid().
-  6.  Si cualquiera de los tiles futuros es sólido, establece una bandera collisionOn en el Transform de la entidad a true.
+        // Constructor que recibe las dependencias
+        public JugadorSystem(JugadorModel jugador, ManejadorTeclas keyH) {
+            this.jugador = jugador;
+            this.keyH = keyH;
+        }
 
----
+        @Override
+        public void update() {
+            // Si cualquier tecla de movimiento esta presionada
+            if (keyH.upPressed || keyH.downPressed || keyH.leftPressed || keyH.rightPressed) {
+                if (keyH.upPressed) {
+                    jugador.getTransform().setDirection("up");
+                } else if (keyH.downPressed) {
+                    jugador.getTransform().setDirection("down");
+                } else if (keyH.leftPressed) {
+                    jugador.getTransform().setDirection("left");
+                } else if (keyH.rightPressed) {
+                    jugador.getTransform().setDirection("right");
+                }
+                jugador.setMoving(true);
+            } else {
+                jugador.setMoving(false);
+            }
+        }
+    }
 
-## Sección 5: Actualización Final de la Posición (Movimiento Físico)
 
-Solo si el camino está despejado, el jugador se mueve.
+4. DETECCION PREDICTIVA DE COLISIONES
 
-- Archivo Principal: domain/MovimientoSystem.java
-- Propósito: Aplicar el cambio final de coordenadas a todas las entidades móviles.
-- Lógica Detallada:
-  1.  El método update() de MovimientoSystem se ejecuta para cada entidad móvil, incluido el jugador.
-  2.  Primero, resetea la bandera de colisión: entity.getTransform().setCollisionOn(false).
-  3.  Invoca al ColisionSystem para que realice la comprobación predictiva: colisionSystem.checkTileCollision(entity).
-  4.  A continuación, comprueba si la entidad tiene intención de moverse (isMoving()) y si su camino no está bloqueado (!getTransform().isCollisionOn()).
-  5.  Solo si ambas condiciones son ciertas, modifica las coordenadas worldX y worldY del Transform de la entidad según su direction y speed.
+Antes de cambiar las coordenadas del jugador, es imperativo comprobar si el
+movimiento es valido.
 
-- Código Ilustrativo (MovimientoSystem.java):
-  java
-  public class MovimientoSystem implements IUpdateable {
-      private ColisionSystem colisionSystem;
-      // ...
+    Archivo Principal: domain/ColisionSystem.java
+    
+    Proposito: Prevenir que una entidad atraviese tiles marcados como solidos.
 
-      public void update(EntidadModel entity) {
-          // 1. Resetear y comprobar colisiones para el frame actual
-          entity.getTransform().setCollisionOn(false);
-          colisionSystem.checkTileCollision(entity);
+4.1 Logica Detallada
 
-          // 2. Mover solo si no hay colisión
-          if (entity.isMoving() && !entity.getTransform().isCollisionOn()) {
-              switch (entity.getTransform().getDirection()) {
-                  case "up":
-                      entity.getTransform().y -= entity.getTransform().getSpeed();
-                      break;
-                  case "down":
-                      entity.getTransform().y += entity.getTransform().getSpeed();
-                      break;
-                  case "left":
-                      entity.getTransform().x -= entity.getTransform().getSpeed();
-                      break;
-                  case "right":
-                      entity.getTransform().x += entity.getTransform().getSpeed();
-                      break;
-              }
-          }
+    1. El ColisionSystem tiene un metodo checkTileCollision(EntidadModel entity).
+    
+    2. Este metodo no mira la posicion actual, sino la posicion futura. Calcula
+       hacia donde se movera la caja de colisiones (solidArea) de la entidad en
+       el siguiente fotograma basandose en su direccion y velocidad.
+       
+    3. Convierte estas coordenadas futuras del mundo a coordenadas de la 
+       cuadricula de tiles (ej. tileNum = worldX / tileSize).
+       
+    4. Comprueba los dos tiles hacia los que se dirige la entidad (ej. si se
+       mueve a la derecha, comprueba los tiles que tocarian la esquina superior
+       derecha e inferior derecha de su solidArea).
+       
+    5. Obtiene esos Tile del mapa y verifica su propiedad isSolid().
+    
+    6. Si cualquiera de los tiles futuros es solido, establece una bandera
+       collisionOn en el Transform de la entidad a true.
 
-          // 3. Actualizar contador de animación para el renderizado
-          // (Esta lógica también podría estar en JugadorSystem)
-          entity.incrementSpriteCounter();
-          if (entity.getSpriteCounter() > 10) { // Cambia de sprite cada 10 frames
-              entity.incrementSpriteNum();
-              entity.resetSpriteCounter();
-          }
-      }
-  }
+
+5. ACTUALIZACION FINAL DE LA POSICION (MOVIMIENTO FISICO)
+
+Solo si el camino esta despejado, el jugador se mueve.
+
+    Archivo Principal: domain/MovimientoSystem.java
+    
+    Proposito: Aplicar el cambio final de coordenadas a todas las entidades
+    moviles.
+
+5.1 Logica Detallada
+
+    1. El metodo update() de MovimientoSystem se ejecuta para cada entidad
+       movil, incluido el jugador.
+       
+    2. Primero, resetea la bandera de colision:
+       entity.getTransform().setCollisionOn(false).
+       
+    3. Invoca al ColisionSystem para que realice la comprobacion predictiva:
+       colisionSystem.checkTileCollision(entity).
+       
+    4. A continuacion, comprueba si la entidad tiene intencion de moverse
+       (isMoving()) y si su camino no esta bloqueado (!getTransform().isCollisionOn()).
+       
+    5. Solo si ambas condiciones son ciertas, modifica las coordenadas worldX
+       y worldY del Transform de la entidad segun su direction y speed.
+
+5.2 Codigo Ilustrativo (MovimientoSystem.java)
+
+    public class MovimientoSystem implements IUpdateable {
+        private ColisionSystem colisionSystem;
+        // ...
+
+        public void update(EntidadModel entity) {
+            // 1. Resetear y comprobar colisiones para el frame actual
+            entity.getTransform().setCollisionOn(false);
+            colisionSystem.checkTileCollision(entity);
+
+            // 2. Mover solo si no hay colision
+            if (entity.isMoving() && !entity.getTransform().isCollisionOn()) {
+                switch (entity.getTransform().getDirection()) {
+                    case "up":
+                        entity.getTransform().y -= entity.getTransform().getSpeed();
+                        break;
+                    case "down":
+                        entity.getTransform().y += entity.getTransform().getSpeed();
+                        break;
+                    case "left":
+                        entity.getTransform().x -= entity.getTransform().getSpeed();
+                        break;
+                    case "right":
+                        entity.getTransform().x += entity.getTransform().getSpeed();
+                        break;
+                }
+            }
+
+            // 3. Actualizar contador de animacion para el renderizado
+            // (Esta logica tambien podria estar en JugadorSystem)
+            entity.incrementSpriteCounter();
+            if (entity.getSpriteCounter() > 10) { // Cambia de sprite cada 10 frames
+                entity.incrementSpriteNum();
+                entity.resetSpriteCounter();
+            }
+        }
+    }
+
+
+================================================================================
+
+FIN DEL DOCUMENTO
+
+================================================================================
+```
